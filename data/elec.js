@@ -384,4 +384,5 @@
       }
     ]
   });
+  DR.elec = { figPulse: figPulse, figDiode: figDiode, figRect: figRect, figSaw: figSaw, figZener: figZener, figBias: figBias, figTwoDiode: figTwoDiode, figClip: figClip, figLoad: figLoad };
 })();

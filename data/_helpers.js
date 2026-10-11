@@ -1,4 +1,11 @@
 /* 出題用的小工具（給 data/*.js 的類題產生器用） */
+// 困難版題目掛到既有單元上：addHard('math', 0, [...])。只能往後加，不要插隊或刪題（id 依順序）。
+window.addHard = function (subjId, unitIndex, items) {
+  var s = (window.QUIZ_DATA || []).filter(function (x) { return x.id === subjId; })[0];
+  if (!s || !s.units[unitIndex]) return;
+  var u = s.units[unitIndex];
+  u.hard = (u.hard || []).concat(items);
+};
 window.QH = (function () {
   function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a || 1; }
   // 負號用全形「−」比較好讀

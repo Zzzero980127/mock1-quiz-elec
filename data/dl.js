@@ -189,7 +189,7 @@
             var g = R.pick(Object.keys(GATES)), A = combos.map(function (c) { return c[0]; }), B = combos.map(function (c) { return c[1]; });
             var X = combos.map(function (c) { return GATES[g](c); });
             return ['如圖所示的時序圖，A、B 為輸入，X 為輸出，此邏輯閘為？', [g].concat(shuffle(Object.keys(GATES).filter(function (x) { return x !== g; })).slice(0, 3)),
-              '逐段對照（AB→X）：' + combos.slice(0, 4).map(function (c, i) { return c.join('') + '→' + X[i]; }).join('、') + '，符合 ' + g + ' 的真值表。',
+              '逐段對照（輸入 AB 對應輸出 X）：' + combos.slice(0, 4).map(function (c, i) { return c.join('') + '→' + X[i]; }).join('、') + '，符合 ' + g + ' 的真值表。',
               D.timing([{ n: 'A', v: A }, { n: 'B', v: B }, { n: 'X', v: X }])];
           } },
           { t: '看圖判斷二極體邏輯', g: function (R) {
@@ -291,4 +291,5 @@
       }
     ]
   });
+  DR.dl = { figGate: figGate, figTwoLevel: figTwoLevel, GATES: GATES, mins: mins, bits3: bits3, shuffle: shuffle };
 })();

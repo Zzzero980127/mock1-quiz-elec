@@ -109,4 +109,5 @@
       }
     ]
   });
+  DR.beel = { figMeter: figMeter, figLED: figLED };
 })();

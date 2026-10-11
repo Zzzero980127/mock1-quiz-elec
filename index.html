@@ -76,6 +76,29 @@ details.lg{border-bottom:1px solid var(--line);padding:8px 0}
 details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 #weakList{overflow-x:auto}
 .btn,.tag{white-space:nowrap}
+.seg{display:flex;margin:8px 0 6px;border:2px solid var(--accent);border-radius:10px;overflow:hidden;max-width:460px}
+.seg button{flex:1;border:none;background:var(--card);color:var(--accent);padding:9px 10px;font-size:.95rem;cursor:pointer;font-family:inherit}
+.seg button.on{background:var(--accent);color:#fff;font-weight:700}
+.seg button:focus-visible{outline:3px solid var(--ink);outline-offset:-3px}
+.figbox{margin:12px 0 2px;max-width:420px;color:var(--ink);font-weight:400}
+.figbox.small{max-width:300px}
+.qfig{width:100%;height:auto;display:block;background:var(--bg);border:1px solid var(--line);border-radius:10px}
+.qfig line,.qfig path,.qfig rect,.qfig circle{stroke:currentColor;fill:none;stroke-width:1.4}
+.qfig .thin{stroke-width:.9;opacity:.75}
+.qfig .thick{stroke-width:2}
+.qfig .thick2{stroke-width:3}
+.qfig .dash{stroke-dasharray:5 4}
+.qfig .acc{stroke:var(--accent)}
+.qfig .fill{fill:var(--line)}
+.qfig .fill2{fill:var(--accent-soft)}
+.qfig .dot{fill:currentColor}
+.qfig text{fill:currentColor;stroke:none;font-size:12px;font-family:inherit}
+.qfig text.small{font-size:10.5px}
+.tag.hardtag{background:var(--bad-soft);color:var(--bad)}
+.vec{display:inline-block;position:relative;padding-top:.35em;line-height:1}
+.vec::before{content:"";position:absolute;left:5%;right:5%;top:.12em;height:0;border-top:1.5px solid currentColor}
+.vec::after{content:"";position:absolute;right:0;top:-.08em;border:.22em solid transparent;border-left:.38em solid currentColor;border-right:0}
+.figbox svg{max-width:100%;height:auto;display:block}
 .cl{border-top:1px solid var(--line);padding:10px 0 4px}
 .cl:first-child{border-top:none}
 .cl .v{font-weight:700}
@@ -97,6 +120,14 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
       <button class="btn small ghost" id="clBtn" aria-expanded="false" style="margin-top:8px">更新日誌</button>
     </div>
     <div class="sub">115 學年度第一次模擬考（10/19～10/20）・依範圍表與《一模全科筆記》《一模國英數》出題・<span id="verText"></span></div>
+    <div class="card">
+      <b>難度模式</b>
+      <div class="seg" role="group" aria-label="難度模式">
+        <button type="button" id="modeEasy">簡單版</button>
+        <button type="button" id="modeHard">困難版（統測類似題）</button>
+      </div>
+      <div class="hint" id="modeHint"></div>
+    </div>
     <div class="card" id="clCard" hidden>
       <b>更新日誌</b>
       <div id="clList"></div>
@@ -168,7 +199,6 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
     <div class="bar"><i id="qBar"></i></div>
     <div class="card">
       <div class="qtext" id="qText"></div>
-      <div class="fig" id="qFig" hidden></div>
       <div class="opts" id="qOpts"></div>
       <div id="qFeedback"></div>
       <div class="row" style="justify-content:space-between">
@@ -196,18 +226,29 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
 </div>
 
 <script>window.QUIZ_DATA = [];</script>
-<script src="data/_helpers.js?v=4"></script>
-<script src="data/_draw.js?v=4"></script>
-<script src="data/chinese.js?v=4"></script>
-<script src="data/english.js?v=4"></script>
-<script src="data/math.js?v=4"></script>
-<script src="data/bee.js?v=4"></script>
-<script src="data/beel.js?v=4"></script>
-<script src="data/elec.js?v=4"></script>
-<script src="data/elecl.js?v=4"></script>
-<script src="data/mpu.js?v=4"></script>
-<script src="data/dl.js?v=4"></script>
-<script src="data/prog.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="data/_helpers.js?v=5"></script>
+<script src="data/_figures.js?v=5"></script>
+<script src="data/_draw.js?v=5"></script>
+<script src="data/chinese.js?v=5"></script>
+<script src="data/english.js?v=5"></script>
+<script src="data/math.js?v=5"></script>
+<script src="data/bee.js?v=5"></script>
+<script src="data/beel.js?v=5"></script>
+<script src="data/elec.js?v=5"></script>
+<script src="data/elecl.js?v=5"></script>
+<script src="data/mpu.js?v=5"></script>
+<script src="data/dl.js?v=5"></script>
+<script src="data/prog.js?v=5"></script>
+<script src="data/hard_chinese.js?v=5"></script>
+<script src="data/hard_english.js?v=5"></script>
+<script src="data/hard_math.js?v=5"></script>
+<script src="data/hard_bee.js?v=5"></script>
+<script src="data/hard_beel.js?v=5"></script>
+<script src="data/hard_elec.js?v=5"></script>
+<script src="data/hard_elecl.js?v=5"></script>
+<script src="data/hard_mpu.js?v=5"></script>
+<script src="data/hard_dl.js?v=5"></script>
+<script src="data/hard_prog.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

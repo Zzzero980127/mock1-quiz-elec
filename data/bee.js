@@ -456,4 +456,6 @@
     var S = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' };
     return String(m).split('').map(function (c) { return S[c]; }).join('');
   }
+  // 給困難版共用
+  DR.bee = { figSeries: figSeries, figMixed: figMixed, figBridge: figBridge, figThev: figThev, figThevRL: figThevRL, figLadder: figLadder, figBridgeAB: figBridgeAB, par: par };
 })();
