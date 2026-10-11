@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>電子科一模題庫</title>
+<style>
+:root{
+  --bg:#f6f7fb; --card:#ffffff; --ink:#1d2433; --muted:#6b7385; --line:#e3e6ee;
+  --accent:#2f6fed; --accent-soft:#e8f0ff; --ok:#1f9d55; --ok-soft:#e6f6ec; --bad:#d64545; --bad-soft:#fdeaea;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151c; --card:#1b2029; --ink:#e7eaf0; --muted:#9aa3b5; --line:#2c3340;
+    --accent:#6c9cff; --accent-soft:#1f2b45; --ok:#45c37b; --ok-soft:#173326; --bad:#ff6b6b; --bad-soft:#3a1f22;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151c; --card:#1b2029; --ink:#e7eaf0; --muted:#9aa3b5; --line:#2c3340;
+  --accent:#6c9cff; --accent-soft:#1f2b45; --ok:#45c37b; --ok-soft:#173326; --bad:#ff6b6b; --bad-soft:#3a1f22;
+  color-scheme:dark;
+}
+.msg{border:1px solid var(--line);background:var(--accent-soft);border-radius:10px;padding:8px 12px;margin-top:10px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;line-height:1.6}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.6rem;margin:4px 0 2px}
+.sub{color:var(--muted);font-size:.92rem;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.subj{border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;background:var(--card);user-select:none;transition:.15s}
+.subj:hover{border-color:var(--accent)}
+.subj.on{border-color:var(--accent);background:var(--accent-soft)}
+.subj .nm{font-weight:700;font-size:1.05rem}
+.subj .meta{color:var(--muted);font-size:.82rem}
+.subj .acc{font-size:.8rem;margin-top:4px}
+.units{margin-top:12px}
+.ublock{margin-bottom:12px}
+.ublock .ut{font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:4px 11px;margin:3px 4px 3px 0;font-size:.86rem;cursor:pointer;user-select:none;background:var(--card)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{border:none;border-radius:10px;padding:10px 18px;font-size:1rem;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.btn.small{padding:4px 10px;font-size:.82rem}
+select{font-size:1rem;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-family:inherit}
+label.opt{display:flex;align-items:center;gap:6px;font-size:.95rem}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin:6px 0 14px}
+.bar>i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+.qtop{display:flex;justify-content:space-between;color:var(--muted);font-size:.88rem;gap:10px;flex-wrap:wrap}
+.tag{background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 8px;font-size:.8rem}
+.qtext{font-size:1.15rem;font-weight:600;margin:10px 0 14px;white-space:pre-wrap}
+.opts button{display:block;width:100%;text-align:left;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:11px 14px;margin-bottom:9px;font-size:1rem;cursor:pointer;font-family:inherit;white-space:pre-wrap}
+.opts button:hover:not(:disabled){border-color:var(--accent)}
+.opts button .k{display:inline-block;width:1.6em;color:var(--muted);font-weight:700}
+.opts button.ok{border-color:var(--ok);background:var(--ok-soft)}
+.opts button.bad{border-color:var(--bad);background:var(--bad-soft)}
+.opts button:disabled{cursor:default}
+.exp{border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 12px;border-radius:6px;margin:6px 0 12px;white-space:pre-wrap}
+.verdict{font-weight:700;margin-bottom:6px}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.big{font-size:2.6rem;font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+td,th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+.wrong{border-top:1px solid var(--line);padding:10px 0}
+.wrong .q{font-weight:600;white-space:pre-wrap}
+.muted{color:var(--muted)}
+.okc{color:var(--ok)} .badc{color:var(--bad)}
+.hint{font-size:.82rem;color:var(--muted)}
+.hidden{display:none}
+.mini{height:5px;width:70px;background:var(--line);border-radius:9px;overflow:hidden;margin-top:2px}
+.mini>i{display:block;height:100%;background:var(--accent)}
+details.lg{border-bottom:1px solid var(--line);padding:8px 0}
+details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#weakList{overflow-x:auto}
+.btn,.tag{white-space:nowrap}
+.cl{border-top:1px solid var(--line);padding:10px 0 4px}
+.cl:first-child{border-top:none}
+.cl .v{font-weight:700}
+.cl .new{background:var(--accent);color:#fff;border-radius:6px;padding:0 7px;font-size:.75rem;margin-left:6px}
+.cl ul{margin:4px 0 0;padding-left:1.3em}
+.ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:14px}
+.ucell{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:.88rem}
+.mini.wide{width:100%;height:7px;margin:4px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- 首頁 -->
+  <div id="home">
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <h1>一模練習題庫・電子科（資電類）</h1>
+      <button class="btn small ghost" id="clBtn" aria-expanded="false" style="margin-top:8px">更新日誌</button>
+    </div>
+    <div class="sub">115 學年度第一次模擬考（10/19～10/20）・依範圍表與《一模全科筆記》《一模國英數》出題・<span id="verText"></span></div>
+    <div class="card" id="clCard" hidden>
+      <b>更新日誌</b>
+      <div id="clList"></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <b>1. 選擇科目（可複選）</b>
+        <span class="row"><button class="btn small ghost" id="allOn">全選</button><button class="btn small ghost" id="allOff">全不選</button></span>
+      </div>
+      <div class="grid" id="subjGrid"></div>
+    </div>
+
+    <div class="card" id="unitCard">
+      <b>2. 選擇單元</b> <span class="hint">（預設全選，點一下可取消）</span>
+      <div class="units" id="units"></div>
+    </div>
+
+    <div class="card">
+      <b>3. 設定</b>
+      <div class="row" style="margin-top:8px">
+        <label class="opt">題數
+          <select id="count">
+            <option value="10">10 題</option>
+            <option value="20" selected>20 題</option>
+            <option value="30">30 題</option>
+            <option value="50">50 題</option>
+            <option value="0">全部</option>
+          </select>
+        </label>
+        <label class="opt"><input type="checkbox" id="optWrongFirst"> 優先出錯過的題目</label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn" id="startBtn">開始練習</button>
+        <button class="btn ghost" id="wrongBtn">錯題本</button>
+        <span class="hint" id="poolInfo"></span>
+      </div>
+      <div class="msg" id="homeMsg" hidden></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b>弱點分析（依主題，越上面越不熟）</b>
+        <span class="row">
+          <button class="btn small" id="weakBtn">一鍵練最弱 5 個主題</button>
+          <button class="btn small ghost" id="logBtn">錯題紀錄</button>
+          <button class="btn small ghost" id="resetBtn">清除紀錄</button>
+        </span>
+      </div>
+      <div class="hint" style="margin:4px 0 8px">正確率 &lt; 60% 不熟、60～80% 普通、≥ 80% 熟練。「練類題」會出同一主題的其他題目；標「可出新數字」的計算題每次都換數字。</div>
+      <div id="weakList"></div>
+      <div class="hint" style="margin-top:8px">紀錄只存在這台電腦的瀏覽器裡。作答時可用鍵盤 1～4 選答案，Enter 下一題。</div>
+    </div>
+  </div>
+
+  <!-- 錯題紀錄 -->
+  <div id="log" class="hidden">
+    <div class="row" style="justify-content:space-between;margin-bottom:10px">
+      <h1>錯題紀錄</h1>
+      <button class="btn ghost" id="logBack">回首頁</button>
+    </div>
+    <div class="hint" style="margin-bottom:10px">依主題分類，錯越多次的排越前面；點開可看當時的題目，按「練類題」直接練同類型。</div>
+    <div class="card" id="logList"></div>
+  </div>
+
+  <!-- 作答 -->
+  <div id="quiz" class="hidden">
+    <div class="qtop"><span id="qProg"></span><span><span class="tag" id="qTag"></span></span></div>
+    <div class="bar"><i id="qBar"></i></div>
+    <div class="card">
+      <div class="qtext" id="qText"></div>
+      <div class="opts" id="qOpts"></div>
+      <div id="qFeedback"></div>
+      <div class="row" style="justify-content:space-between">
+        <button class="btn ghost small" id="quitBtn">結束並看成績</button>
+        <button class="btn hidden" id="nextBtn">下一題 ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 成績 -->
+  <div id="result" class="hidden">
+    <div class="card" style="text-align:center">
+      <div class="muted">本次得分</div>
+      <div class="big" id="rScore"></div>
+      <div id="rDetail" class="muted"></div>
+      <div class="row" style="justify-content:center;margin-top:14px">
+        <button class="btn" id="retryWrong">重練這次的錯題</button>
+        <button class="btn" id="similarWrong">練錯題的類似題</button>
+        <button class="btn ghost" id="homeBtn">回首頁</button>
+      </div>
+    </div>
+    <div class="card"><b>各科表現</b><table id="rTable" style="margin-top:6px"></table></div>
+    <div class="card" id="rWrongCard"><b>錯題檢討</b><div id="rWrong"></div></div>
+  </div>
+</div>
+
+<script>window.QUIZ_DATA = [];</script>
+<script src="data/_helpers.js?v=2"></script>
+<script src="data/chinese.js?v=2"></script>
+<script src="data/english.js?v=2"></script>
+<script src="data/math.js?v=2"></script>
+<script src="data/bee.js?v=2"></script>
+<script src="data/beel.js?v=2"></script>
+<script src="data/elec.js?v=2"></script>
+<script src="data/elecl.js?v=2"></script>
+<script src="data/mpu.js?v=2"></script>
+<script src="data/dl.js?v=2"></script>
+<script src="data/prog.js?v=2"></script>
+<script src="app.js?v=2"></script>
+</body>
+</html>
