@@ -36,6 +36,47 @@
   ];
   function mins(f) { var out = []; for (var m = 0; m < 8; m++) if (f((m >> 2) & 1, (m >> 1) & 1, m & 1)) out.push(m); return out; }
   function bits3(m) { return ('00' + m.toString(2)).slice(-3); }
+  // ---------- 圖 ----------
+  var D = DR, T = D.text, w = D.wire;
+  var GEXP = { AND: 'AB', OR: 'A + B', NAND: "(AB)'", NOR: "(A + B)'" };
+  // 單一邏輯閘（輸入標上數值）
+  function figGate(type, vals) {
+    var g = D.gate(type, 90, 20, vals.length), s = g.s;
+    g.ins.forEach(function (p, i) { s += T(p[0] - 6, p[1] + 5, String(vals[i]), 'end', 15); });
+    return D.svg(230, 80, s + T(g.out[0] + 6, g.out[1] + 5, 'F', 'start', 15));
+  }
+  // 一腳接固定值或兩腳接在一起
+  function figTie(type, c) {
+    var g = D.gate(type, 110, 20, 2), s = g.s, a = g.ins[0], b = g.ins[1];
+    if (c === 'tie') s += w([30, a[1]], a) + D.dot(60, a[1]) + w([60, a[1]], [60, b[1]], b) + T(24, a[1] + 5, 'A', 'end', 15);
+    else s += w([30, a[1]], a) + T(24, a[1] + 5, 'A', 'end', 15) + T(b[0] - 6, b[1] + 5, String(c), 'end', 15);
+    return D.svg(250, 80, s + T(g.out[0] + 6, g.out[1] + 5, 'F', 'start', 15));
+  }
+  // 兩級邏輯電路：G1(A, B) → G2(·, C)
+  function figTwoLevel(g1, g2) {
+    var a = D.gate(g1, 70, 10, 2), b = D.gate(g2, 200, 40, 2), s = a.s + b.s;
+    s += T(a.ins[0][0] - 6, a.ins[0][1] + 5, 'A', 'end', 14) + T(a.ins[1][0] - 6, a.ins[1][1] + 5, 'B', 'end', 14);
+    s += w(a.out, [160, a.out[1]], [160, b.ins[0][1]], b.ins[0]) + w([54, 100], [160, 100], [160, b.ins[1][1]], b.ins[1]) + T(48, 105, 'C', 'end', 14);
+    return D.svg(320, 115, s + T(b.out[0] + 6, b.out[1] + 5, 'F', 'start', 15));
+  }
+  // 二極體邏輯：and → 陽極接一起經 R 接 VCC；or → 陰極接一起經 R 接地
+  function figDiodeLogic(kind) {
+    var el = D.el, s = D.term(27, 80) + T(20, 85, 'A', 'end', 14) + D.term(27, 140) + T(20, 145, 'B', 'end', 14);
+    if (kind === 'and') s += el('D', [150, 80], [30, 80]) + el('D', [150, 140], [30, 140]) + w([150, 80], [150, 140]) + D.dot(150, 110) + el('R', [150, 80], [150, 15], { l: 'R' }) + T(150, 8, '+VCC');
+    else s += el('D', [30, 80], [150, 80]) + el('D', [30, 140], [150, 140]) + w([150, 80], [150, 140]) + D.dot(150, 110) + el('R', [150, 140], [150, 190], { l: 'R' }) + D.gnd(150, 190);
+    s += w([150, 110], [227, 110]) + D.term(230, 110) + T(242, 115, 'F', 'start', 14);
+    return D.svg(270, 210, s);
+  }
+  // 梯形脈波（量 50% 處）
+  function figTrap(r, h, f, lo) {
+    var x0 = 40, y0 = 130, u = 22, yh = 40, Tn = r + h + f + lo, s = '', t = 1, pts = [[x0, y0], [x0 + u, y0]];
+    for (var k = 0; k < 2; k++) { pts.push([x0 + (t + r) * u, yh], [x0 + (t + r + h) * u, yh], [x0 + (t + r + h + f) * u, y0], [x0 + (t + Tn) * u, y0]); t += Tn; }
+    var maxT = 1 + 2 * Tn;
+    s += D.axes(x0, y0, maxT * u + 20, 110, 't', 'V') + '<g stroke-width="2.2">' + w.apply(null, pts) + '</g>';
+    for (var i = 1; i <= maxT; i++) s += D.line(x0 + i * u, y0 - 3, x0 + i * u, y0 + 3) + T(x0 + i * u, y0 + 16, String(i), 'middle', 11);
+    s += T(x0 - 6, yh + 4, '1', 'end') + T(x0 - 6, (yh + y0) / 2 + 4, '0.5', 'end') + D.line(x0, (yh + y0) / 2, x0 + maxT * u, (yh + y0) / 2, ' stroke-dasharray="4 3" stroke-width="1"');
+    return D.svg(x0 + maxT * u + 50, 155, s);
+  }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 
   QUIZ_DATA.push({
@@ -77,6 +118,12 @@
             var c = R.pick([[R.int(2, 11), 'SSI'], [R.int(12, 99), 'MSI'], [R.int(100, 999), 'LSI'], [R.int(1000, 50000), 'VLSI']]);
             return ['IC 內含 ' + c[0] + ' 個邏輯閘，屬於？', [c[1]].concat(['SSI', 'MSI', 'LSI', 'VLSI', 'ULSI'].filter(function (x) { return x !== c[1]; }).slice(0, 3)),
               'SSI < 12、MSI 12～99、LSI 100～999、VLSI 1000 以上、ULSI 10⁵ 以上。'];
+          } },
+          { t: '看圖算工作週期', g: function (R) {
+            var r = R.pick([1, 2]), h = R.pick([2, 3, 4]), f = R.pick([1, 2]), lo = R.pick([1, 2, 3]), Tn = r + h + f + lo, tH = h + r / 2 + f / 2;
+            return ['如圖所示為一非理想的週期性脈波（時間單位 μs），依脈波寬度的定義，其工作週期 D% 為多少？', [d(tH / Tn * 100, 2) + '%', d(h / Tn * 100, 2) + '%', d((r + h + f) / Tn * 100, 2) + '%', d(tH / (Tn - lo) * 100, 2) + '%'],
+              '脈波寬度量 50% 振幅處：上升到 0.5 在 t = ' + (1 + r / 2) + '、下降到 0.5 在 t = ' + (1 + r + h + f / 2) + ' → tH = ' + tH + '；週期 T = ' + Tn + '；D% = ' + tH + ' ÷ ' + Tn + ' = ' + d(tH / Tn * 100, 2) + '%。',
+              figTrap(r, h, f, lo)];
           } }
         ]
       },
@@ -119,6 +166,37 @@
             var n = R.pick([2, 3, 4]), g = R.pick([['NAND', 0], ['NOR', 1], ['AND', 1], ['OR', 0]]), k = Math.pow(2, n);
             return [n + ' 輸入 ' + g[0] + ' 閘，輸入任意組合時，輸出為 ' + g[1] + ' 的機率為多少？', ['1/' + k, (k - 1) + '/' + k, '1/' + n, '1/2'],
               g[0] + ' 輸出為 ' + g[1] + ' 只有「全部輸入為 ' + (g[0] === 'NAND' || g[0] === 'AND' ? '1' : '0') + '」一種組合，共 2^' + n + ' = ' + k + ' 種 → 1/' + k + '。'];
+          } },
+          { t: '看圖認邏輯閘', g: function (R) {
+            var n = R.pick([2, 2, 3]), v = []; for (var i = 0; i < n; i++) v.push(R.int(0, 1));
+            var names = Object.keys(GATES), g = R.pick(names), out = GATES[g](v);
+            var others = shuffle(names.filter(function (x) { return x !== g; })).slice(0, 2).map(function (x) { return x + '，F = ' + GATES[x](v); });
+            return ['如圖所示的邏輯閘，輸入如圖，此閘的名稱與輸出 F 為？', [g + '，F = ' + out, g + '，F = ' + (1 - out)].concat(others),
+              '圖中是 ' + g + ' 閘（' + { AND: '平頭', OR: '弧形', NAND: '平頭加小圓圈', NOR: '弧形加小圓圈', XOR: '弧形前面多一條弧線', XNOR: 'XOR 加小圓圈' }[g] + '）；輸入 ' + v.join('') + ' → F = ' + out + '。',
+              figGate(g, v)];
+          } },
+          { t: '看圖判斷特殊接法', g: function (R) {
+            var g = R.pick(['XOR', 'XNOR', 'NAND', 'NOR', 'AND', 'OR']), c = R.pick([0, 1, 'tie']);
+            var f0 = GATES[g]([0, c === 'tie' ? 0 : c]), f1 = GATES[g]([1, c === 'tie' ? 1 : c]);
+            var ans = f0 === 0 && f1 === 1 ? 'F = A（緩衝器）' : f0 === 1 && f1 === 0 ? "F = A'（反相器）" : 'F = ' + f0 + '（固定輸出）';
+            var all = ['F = A（緩衝器）', "F = A'（反相器）", 'F = 0（固定輸出）', 'F = 1（固定輸出）'];
+            return ['如圖所示的接法，輸出 F 為何？', [ans].concat(all.filter(function (x) { return x !== ans; })),
+              (c === 'tie' ? '兩輸入接在一起' : '一腳接 ' + c) + '：A = 0 → F = ' + f0 + '；A = 1 → F = ' + f1 + '。',
+              figTie(g, c)];
+          } },
+          { t: '看圖判斷時序圖', g: function (R) {
+            var combos = shuffle([[0, 0], [0, 1], [1, 0], [1, 1]]).concat(shuffle([[0, 0], [0, 1], [1, 0], [1, 1]]));
+            var g = R.pick(Object.keys(GATES)), A = combos.map(function (c) { return c[0]; }), B = combos.map(function (c) { return c[1]; });
+            var X = combos.map(function (c) { return GATES[g](c); });
+            return ['如圖所示的時序圖，A、B 為輸入，X 為輸出，此邏輯閘為？', [g].concat(shuffle(Object.keys(GATES).filter(function (x) { return x !== g; })).slice(0, 3)),
+              '逐段對照（AB→X）：' + combos.slice(0, 4).map(function (c, i) { return c.join('') + '→' + X[i]; }).join('、') + '，符合 ' + g + ' 的真值表。',
+              D.timing([{ n: 'A', v: A }, { n: 'B', v: B }, { n: 'X', v: X }])];
+          } },
+          { t: '看圖判斷二極體邏輯', g: function (R) {
+            var k = R.pick(['and', 'or']), ans = k === 'and' ? 'AND' : 'OR';
+            return ['如圖所示的二極體邏輯電路（正邏輯），相當於哪一種邏輯閘？', [ans, ans === 'AND' ? 'OR' : 'AND', 'NAND', 'NOR'],
+              k === 'and' ? '陽極接在一起、經電阻接 VCC：任一輸入為 0，該二極體導通把 F 拉低 → 全 1 才 1，是 AND。' : '陰極接在一起、經電阻接地：任一輸入為 1 就導通把 F 拉高 → 有 1 就 1，是 OR。',
+              figDiodeLogic(k)];
           } }
         ]
       },
@@ -148,6 +226,14 @@
             var ans = R.pick(A), others = shuffle(B).slice(0, 3);
             return ['F = ' + e[0] + '，下列哪一組輸入 ABC 會使 F = ' + want + '？', [bits3(ans)].concat(others.map(bits3)),
               'F = 1 的組合（ABC）：' + ones.map(bits3).join('、') + '。代入 ' + bits3(ans) + '：A = ' + bits3(ans)[0] + '、B = ' + bits3(ans)[1] + '、C = ' + bits3(ans)[2] + ' → F = ' + want + '。'];
+          } },
+          { t: '看圖寫布林式', g: function (R) {
+            var g1 = R.pick(['AND', 'OR', 'NAND', 'NOR']), g2 = R.pick(['AND', 'OR']);
+            function ex(a, b) { return b === 'OR' ? (a === 'OR' ? 'A + B + C' : GEXP[a] + ' + C') : (a === 'OR' ? '(A + B)C' : GEXP[a] + 'C'); }
+            var others = shuffle(['AND', 'OR', 'NAND', 'NOR'].filter(function (x) { return x !== g1; })).slice(0, 2).map(function (x) { return ex(x, g2); });
+            return ['如圖所示的邏輯電路，輸出 F 的布林式為？', [ex(g1, g2)].concat(others, ex(g1, g2 === 'AND' ? 'OR' : 'AND')),
+              '第一個閘是 ' + g1 + '：輸出 ' + GEXP[g1] + '；再與 C 做 ' + g2 + ' → F = ' + ex(g1, g2) + '。',
+              figTwoLevel(g1, g2)];
           } }
         ]
       },

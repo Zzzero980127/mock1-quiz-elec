@@ -2,6 +2,105 @@
 (function () {
   var H = QH, si = H.si, d = H.dec, PI = Math.PI;
 
+  // ---------- 電路圖、波形 ----------
+  var D = DR, el = D.el, w = D.wire, T = D.text, L = D.line;
+  function dash(x1, y1, x2, y2) { return L(x1, y1, x2, y2, ' stroke-dasharray="4 3" stroke-width="1"'); }
+  function dim(x1, x2, y, s) { return D.arrow((x1 + x2) / 2, y, x1, y) + D.arrow((x1 + x2) / 2, y, x2, y) + T((x1 + x2) / 2, y - 5, s); }
+  // 方波脈波：週期 T、高電位寬 tH（比例 r）
+  function figPulse(Tl, tHl, Vml, r) {
+    var x0 = 40, y0 = 140, P = 100, pts = [[x0, y0]];
+    for (var k = 0; k < 3; k++) { var xs = x0 + 10 + k * P; pts.push([xs, y0], [xs, 50], [xs + r * P, 50], [xs + r * P, y0]); }
+    pts.push([x0 + 10 + 3 * P, y0]);
+    return D.svg(360, 175, D.axes(x0, y0, 320, 120, 't', 'v') + '<g stroke-width="2.2">' + w.apply(null, pts) + '</g>' + T(x0 - 6, 54, Vml, 'end') + dash(x0, 50, x0 + 10, 50) +
+      dim(x0 + 10, x0 + 10 + r * P, 38, tHl) + dim(x0 + 10, x0 + 10 + P, 160, Tl) + dash(x0 + 10 + P, y0, x0 + 10 + P, 160) + T(x0 - 6, y0 + 4, '0', 'end'));
+  }
+  // 電流脈波：I1 持續 t1、0 持續 t2（單位 ms）
+  function figCur(I1, t1, t2) {
+    var x0 = 40, y0 = 130, u = 28, pts = [[x0, y0]], t = 0, hi = 50;
+    for (var k = 0; k < 3; k++) { pts.push([x0 + t * u, hi], [x0 + (t + t1) * u, hi], [x0 + (t + t1) * u, y0], [x0 + (t + t1 + t2) * u, y0]); t += t1 + t2; }
+    var s = D.axes(x0, y0, Math.min(t * u, 300) + 20, 110, 't (ms)', 'i (A)') + '<g stroke-width="2.2">' + w.apply(null, pts) + '</g>' + T(x0 - 6, hi + 4, String(I1), 'end') + dash(x0, hi, x0 + 4, hi);
+    for (var i = 1; i <= t && i * u <= 320; i++) s += L(x0 + i * u, y0 - 3, x0 + i * u, y0 + 3) + T(x0 + i * u, y0 + 16, String(i), 'middle', 11);
+    return D.svg(380, 160, s);
+  }
+  // 電源 + 電阻 + 二極體
+  function figDiode(V, R1, dl) {
+    return D.svg(280, 165, el('V', [40, 125], [40, 45], { plus: 'b', l: V, side: 'l' }) + w([40, 45], [40, 25]) + el('R', [40, 25], [200, 25], { l: R1 }) +
+      w([200, 25], [220, 25], [220, 45]) + el('D', [220, 45], [220, 125], { l: dl }) + w([220, 125], [220, 145], [40, 145], [40, 125]) + D.arrow(120, 50, 160, 50) + T(140, 68, 'I'));
+  }
+  // 整流電路：half、ct（中間抽頭）、bridge
+  function figRect(type, vl) {
+    var s = D.ac(14, 40, 140, vl, 'l') + w([14, 40], [60, 40]) + w([14, 140], [60, 140]) + D.coil(60, 40, 140, true) + '<g stroke-width="1.2">' + L(78, 32, 78, 148) + L(83, 32, 83, 148) + '</g>';
+    if (type === 'half') {
+      s += D.coil(100, 40, 140, false) + el('D', [100, 40], [230, 40], { l: 'D' }) + el('R', [260, 40], [260, 140], { l: 'RL' }) + w([230, 40], [260, 40]) + w([260, 140], [100, 140]);
+      return D.svg(320, 170, s);
+    }
+    if (type === 'ct') {
+      s = D.ac(14, 50, 150, vl, 'l') + w([14, 50], [60, 50]) + w([14, 150], [60, 150]) + D.coil(60, 50, 150, true) + '<g stroke-width="1.2">' + L(78, 12, 78, 188) + L(83, 12, 83, 188) + '</g>';
+      s += D.coil(100, 20, 100, false) + D.coil(100, 100, 180, false) + D.dot(100, 100) + el('D', [100, 20], [210, 20], { l: 'D₁' }) + w([210, 20], [300, 20]) +
+        el('D', [100, 180], [210, 180], { l: 'D₂', side: 'b' }) + w([210, 180], [300, 180], [300, 20]) + D.dot(250, 20) + el('R', [250, 20], [250, 100], { l: 'RL', side: 'l' }) + w([250, 100], [100, 100]);
+      return D.svg(320, 200, s);
+    }
+    var Lf = [160, 90], Rn = [260, 90], Tp = [210, 40], Bt = [210, 140];
+    s += D.coil(100, 40, 140, false) + w([100, 40], [130, 40], [130, 90], Lf) + w([100, 140], [100, 172], [292, 172], [292, 90], Rn) +
+      el('D', Lf, Tp) + el('D', Rn, Tp) + el('D', Bt, Lf) + el('D', Bt, Rn) + w(Tp, [210, 14], [340, 14]) + el('R', [340, 14], [340, 160], { l: 'RL' }) + w([340, 160], [210, 160], Bt) +
+      D.dot(Lf[0], Lf[1]) + D.dot(Rn[0], Rn[1]) + D.dot(Tp[0], Tp[1]) + D.dot(Bt[0], Bt[1]);
+    return D.svg(370, 185, s);
+  }
+  // 鋸齒狀漣波
+  function figSaw(hi, lo) {
+    var x0 = 40, y0 = 140, yh = 50, yl = 90, pts = [[x0, yh]];
+    for (var k = 0; k < 5; k++) { var xs = x0 + k * 56; pts.push([xs + 46, yl], [xs + 56, yh]); }
+    return D.svg(360, 165, D.axes(x0, y0, 320, 120, 't', 'v') + '<g stroke-width="2.2">' + w.apply(null, pts) + '</g>' + dash(x0, yl, x0 + 290, yl) + dash(x0, yh, x0 + 290, yh) +
+      T(x0 - 6, yh + 4, hi, 'end') + T(x0 - 6, yl + 4, lo, 'end'));
+  }
+  // 稽納穩壓
+  function figZener(Vi, Rs, Vz, IL) {
+    return D.svg(320, 170, el('V', [40, 130], [40, 50], { plus: 'b', l: Vi, side: 'l' }) + w([40, 50], [40, 30]) + el('R', [40, 30], [170, 30], { l: Rs }) +
+      D.dot(170, 30) + el('Z', [170, 150], [170, 30], { l: Vz, side: 'l' }) + w([170, 30], [260, 30]) + el('R', [260, 30], [260, 150], { l: 'RL' }) +
+      D.arrow(215, 18, 250, 18) + T(232, 12, IL) + w([40, 130], [40, 150], [260, 150]) + D.dot(170, 150));
+  }
+  // 電晶體各腳電壓
+  function figRegion(VB, VE, VC) {
+    var q = D.npn(110, 85);
+    return D.svg(250, 175, q.s + w(q.B, [60, 85]) + D.term(57, 85) + T(50, 90, 'B：' + VB, 'end') + w(q.C, [142, 18]) + D.term(142, 15) + T(152, 19, 'C：' + VC, 'start') +
+      w(q.E, [142, 150]) + D.term(142, 153) + T(152, 157, 'E：' + VE, 'start'));
+  }
+  // 偏壓電路：o = { RB, RC, RE, R1, R2, V, ce（射極旁路電容）, ac（畫輸入輸出） }
+  function figBias(o) {
+    var by = 140, q = D.npn(120, by), C = q.C, E = q.E, s = q.s;
+    s += w([40, 20], [C[0] + 40, 20]) + T(C[0] + 40, 12, o.V, 'end') + el('R', [C[0], 20], C, { l: o.RC, side: o.ac ? 'l' : 'r' });
+    if (o.R1) {
+      s += el('R', [60, 20], [60, by], { l: o.R1, side: 'l' }) + el('R', [60, by], [60, 250], { l: o.R2, side: 'l' }) + D.gnd(60, 250) + D.dot(60, 20) + D.dot(60, by) + w([60, by], q.B);
+    } else {
+      s += el('R', [60, 20], [60, by], { l: o.RB, side: 'l' }) + D.dot(60, 20) + w([60, by], q.B);
+    }
+    if (o.RE) {
+      s += el('R', E, [E[0], 250], { l: o.RE, side: o.ce ? 'l' : 'r' }) + D.gnd(E[0], 250);
+      if (o.ce) s += D.dot(E[0], E[1] + 8) + w([E[0], E[1] + 8], [E[0] + 40, E[1] + 8]) + el('C', [E[0] + 40, E[1] + 8], [E[0] + 40, 250], { l: 'CE' }) + w([E[0] + 40, 250], [E[0], 250]);
+    } else s += D.gnd(E[0], E[1]);
+    if (o.ac) s += el('C', [0, by], [60, by], { l: 'C₁' }) + D.term(-3, by) + T(-8, by + 18, 'vi', 'middle') + D.dot(C[0], C[1] - 12) +
+      el('C', [C[0], C[1] - 12], [C[0] + 70, C[1] - 12], { l: 'C₂' }) + D.term(C[0] + 73, C[1] - 12) + T(C[0] + 73, C[1] + 6, 'vo');
+    return D.svg(o.ac || o.ce ? 270 : 230, 270, s);
+  }
+  // 兩顆二極體接到同一電阻（OR 型）
+  function figTwoDiode(V1, V2, Rl) {
+    return D.svg(280, 175, D.term(27, 40) + T(20, 45, V1, 'end') + el('D', [30, 40], [130, 40], { l: 'D₁' }) + D.term(27, 100) + T(20, 105, V2, 'end') +
+      el('D', [30, 100], [130, 100], { l: 'D₂', side: 'b' }) + w([130, 40], [150, 40], [150, 100], [130, 100]) + D.dot(150, 70) + w([150, 70], [210, 70]) +
+      el('R', [210, 70], [210, 150], { l: Rl }) + D.gnd(210, 150) + D.arrow(222, 95, 222, 125) + T(230, 115, 'I', 'start'));
+  }
+  // 截波電路
+  function figClip(vi, Rl, VB) {
+    return D.svg(300, 180, D.term(20, 30) + T(12, 35, vi, 'end') + el('R', [23, 30], [150, 30], { l: Rl }) + D.dot(150, 30) + w([150, 30], [247, 30]) + D.term(250, 30) +
+      el('D', [150, 30], [150, 95], { l: 'D' }) + el('V', [150, 155], [150, 95], { plus: 'b', l: VB }) + D.term(20, 155) + w([23, 155], [247, 155]) + D.term(250, 155) +
+      D.dot(150, 155) + T(262, 97, 'vo', 'start') + T(250, 52, '+') + T(250, 145, '−'));
+  }
+  // 直流負載線
+  function figLoad(Vcc, Isat) {
+    var x0 = 50, y0 = 150, X = 230, Y = 110;
+    return D.svg(340, 175, D.axes(x0, y0, 280, 135, 'VCE (V)', 'IC (mA)') + '<g stroke-width="2.2">' + L(x0, y0 - Y, x0 + X, y0) + '</g>' +
+      T(x0 - 6, y0 - Y + 4, Isat, 'end') + T(x0 + X, y0 + 18, Vcc) + T(x0 - 6, y0 + 16, '0', 'end') + D.dot(x0, y0 - Y) + D.dot(x0 + X, y0));
+  }
+
   QUIZ_DATA.push({
     id: 'elec', name: '電子學', desc: '專一・第一～四單元',
     units: [
@@ -45,7 +144,8 @@
             var T = R.pick([10, 20, 50, 100]), tH = T * R.pick([0.1, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.75]), Vm = R.pick([5, 10, 12, 20]);
             var D = tH / T, Vav = Vm * D;
             return ['脈波週期 ' + T + ' ms、高電位時間 ' + d(tH, 1) + ' ms、振幅 ' + Vm + ' V（0 V～' + Vm + ' V），工作週期與平均值為？', [d(D * 100, 1) + '%、' + d(Vav, 2) + ' V', d(D * 100, 1) + '%、' + d(Vm, 2) + ' V', d(100 - D * 100, 1) + '%、' + d(Vm - Vav, 2) + ' V', d(D * 100, 1) + '%、' + d(Vm / 2, 2) + ' V'],
-              'D% = tH ÷ T = ' + d(tH, 1) + ' ÷ ' + T + ' = ' + d(D * 100, 1) + '%；Vav = Vm × D% = ' + d(Vav, 2) + ' V。'];
+              'D% = tH ÷ T = ' + d(tH, 1) + ' ÷ ' + T + ' = ' + d(D * 100, 1) + '%；Vav = Vm × D% = ' + d(Vav, 2) + ' V。',
+              figPulse('T = ' + T + ' ms', 'tH = ' + d(tH, 1) + ' ms', Vm + ' V', D)];
           } },
           { t: '脈波', g: function (R) {
             var D1 = R.pick([20, 21, 30, 40, 60]), V1 = R.pick([10, 12, 14, 15]), V2 = R.pick([6, 8, 9, 12]);
@@ -57,7 +157,8 @@
             var I1 = R.pick([2, 3, 4]), t1 = R.pick([1, 2, 3]), t2 = R.pick([1, 2, 3]), Rr = R.pick([5, 10]);
             var Irms2 = I1 * I1 * t1 / (t1 + t2), P = Irms2 * Rr;
             return ['電流為 ' + I1 + ' A 持續 ' + t1 + ' ms、0 A 持續 ' + t2 + ' ms 的重複脈波，流過 ' + Rr + ' Ω 電阻的平均功率為多少？', [d(P, 2) + ' W', d(I1 * I1 * Rr, 2) + ' W', d(Math.pow(I1 * t1 / (t1 + t2), 2) * Rr, 2) + ' W', d(P / 2, 2) + ' W'],
-              'Irms² = I² × t1 ÷ T = ' + I1 * I1 + ' × ' + t1 + ' ÷ ' + (t1 + t2) + ' = ' + d(Irms2, 3) + '；P = Irms²R = ' + d(P, 2) + ' W。不能用平均電流算。'];
+              'Irms² = I² × t1 ÷ T = ' + I1 * I1 + ' × ' + t1 + ' ÷ ' + (t1 + t2) + ' = ' + d(Irms2, 3) + '；P = Irms²R = ' + d(P, 2) + ' W。不能用平均電流算。',
+              figCur(I1, t1, t2)];
           } }
         ]
       },
@@ -80,12 +181,14 @@
             var V = R.pick([5, 6, 10, 12, 15]), Rr = R.pick([0.5, 1, 2, 4.7, 10]), si_ = Math.random() < 0.7, Vg = si_ ? 0.7 : 0.3;
             var I = (V - Vg) / (Rr * 1000);
             return [V + ' V 電源串聯 ' + Rr + ' kΩ 與一顆順偏的' + (si_ ? '矽' : '鍺') + '二極體（定電壓模型），電流為多少？', [si(I, 'A'), si(V / (Rr * 1000), 'A'), si((V + Vg) / (Rr * 1000), 'A'), si((V - (si_ ? 0.3 : 0.7)) / (Rr * 1000), 'A')],
-              'I = (V − Vγ) ÷ R = (' + V + ' − ' + Vg + ') ÷ ' + Rr + ' kΩ = ' + si(I, 'A') + '。'];
+              'I = (V − Vγ) ÷ R = (' + V + ' − ' + Vg + ') ÷ ' + Rr + ' kΩ = ' + si(I, 'A') + '。',
+              figDiode(V + ' V', Rr + ' kΩ', si_ ? '矽' : '鍺')];
           } },
           { t: '二極體電路', g: function (R) {
             var V = R.pick([5, 10, 12]), Rr = R.pick([100, 200, 500]), rd = R.pick([5, 10, 20]), I = (V - 0.7) / (Rr + rd);
             return [V + ' V 電源串 ' + Rr + ' Ω 與矽二極體（Vγ = 0.7 V、順向電阻 rd = ' + rd + ' Ω），電流為多少？', [si(I, 'A'), si((V - 0.7) / Rr, 'A'), si(V / (Rr + rd), 'A'), si((V - 0.7) / (Rr - rd), 'A')],
-              'I = (V − Vγ) ÷ (R + rd) = ' + d(V - 0.7, 1) + ' ÷ ' + (Rr + rd) + ' = ' + si(I, 'A') + '。'];
+              'I = (V − Vγ) ÷ (R + rd) = ' + d(V - 0.7, 1) + ' ÷ ' + (Rr + rd) + ' = ' + si(I, 'A') + '。',
+              figDiode(V + ' V', Rr + ' Ω', 'rd = ' + rd + ' Ω')];
           } },
           { t: '二極體方程式', g: function (R) {
             var k = R.pick([10, 100, 1000]), eta = R.pick([1, 2]), dv = eta * 26 * Math.log(k);
@@ -101,12 +204,14 @@
             var Vm = R.pick([10, 15.7, 20, 31.4, 100]), type = R.pick(['半波', '中間抽頭全波', '橋式全波']), full = type !== '半波';
             var Vdc = full ? 2 * Vm / PI : Vm / PI;
             return [type + '整流（理想二極體），二次側峰值 ' + Vm + ' V，輸出平均電壓約為多少？', [d(Vdc, 2) + ' V', d(full ? Vm / PI : 2 * Vm / PI, 2) + ' V', d(Vm / Math.SQRT2, 2) + ' V', d(Vm, 2) + ' V'],
-              '半波 Vdc = Vm ÷ π；全波（中間抽頭、橋式）Vdc = 2Vm ÷ π。本題 = ' + d(Vdc, 2) + ' V。'];
+              '半波 Vdc = Vm ÷ π；全波（中間抽頭、橋式）Vdc = 2Vm ÷ π。本題 = ' + d(Vdc, 2) + ' V。',
+              figRect(type === '半波' ? 'half' : type === '中間抽頭全波' ? 'ct' : 'bridge', 'Vm = ' + Vm + ' V')];
           } },
           { t: '整流與濾波', g: function (R) {
             var Vm = R.pick([10, 12, 15, 20, 24]), type = R.pick([['半波', 1], ['中間抽頭全波', 2], ['橋式全波', 1]]);
-            return [type[0] + '整流電路，變壓器二次側（' + (type[0] === '中間抽頭全波' ? '每半邊' : '') + '）峰值 ' + Vm + ' V，二極體的 PIV 至少為多少？', [type[1] * Vm + ' V', (type[1] === 2 ? Vm : 2 * Vm) + ' V', d(Vm / Math.SQRT2, 2) + ' V', d(Vm / 2, 1) + ' V'],
-              'PIV：半波 Vm；中間抽頭全波 2Vm；橋式 Vm。'];
+            return [type[0] + '整流電路，變壓器二次側' + (type[0] === '中間抽頭全波' ? '（每半邊）' : '') + '峰值 ' + Vm + ' V，二極體的 PIV 至少為多少？', [type[1] * Vm + ' V', (type[1] === 2 ? Vm : 2 * Vm) + ' V', d(Vm / Math.SQRT2, 2) + ' V', d(Vm / 2, 1) + ' V'],
+              'PIV：半波 Vm；中間抽頭全波 2Vm；橋式 Vm。',
+              figRect(type[0] === '半波' ? 'half' : type[0] === '中間抽頭全波' ? 'ct' : 'bridge', '')];
           } },
           { t: '整流與濾波', g: function (R) {
             var Idc = R.pick([50, 100, 200, 500]), f = 60, full = Math.random() < 0.6, fr = full ? 120 : 60, C = R.pick([470, 1000, 2200]);
@@ -117,20 +222,36 @@
           { t: '整流與濾波', g: function (R) {
             var Vpp = R.pick([1, 2, 3, 3.46, 6.93]), Vdc = R.pick([10, 12, 20]), rms = Vpp / (2 * Math.sqrt(3));
             return ['電容濾波輸出 Vdc = ' + Vdc + ' V，鋸齒狀漣波峰對峰值 ' + Vpp + ' V，漣波百分比約為多少？', [d(rms / Vdc * 100, 2) + '%', d(Vpp / Vdc * 100, 2) + '%', d(Vpp / Math.SQRT2 / Vdc * 100, 2) + '%', d(rms / Vdc * 10, 2) + '%'],
-              'Vr(rms) = Vr(p-p) ÷ (2√3) = ' + d(rms, 3) + ' V；r% = ' + d(rms, 3) + ' ÷ ' + Vdc + ' × 100% = ' + d(rms / Vdc * 100, 2) + '%。'];
+              'Vr(rms) = Vr(p-p) ÷ (2√3) = ' + d(rms, 3) + ' V；r% = ' + d(rms, 3) + ' ÷ ' + Vdc + ' × 100% = ' + d(rms / Vdc * 100, 2) + '%。',
+              figSaw(d(Vdc + Vpp / 2, 2) + ' V', d(Vdc - Vpp / 2, 2) + ' V')];
           } },
           { t: '截波、箝位、稽納', g: function (R) {
             var Vz = R.pick([5, 6, 9, 10]), Vi = Vz + R.pick([6, 8, 10, 12]), Rs = R.pick([100, 200, 250, 500]), IL = R.pick([5, 10, 20]);
             var Is = (Vi - Vz) / Rs * 1000, Iz = Is - IL;
             if (Iz <= 0) { Rs = 100; Is = (Vi - Vz) / Rs * 1000; Iz = Is - IL; }
             return ['稽納穩壓電路 Vi = ' + Vi + ' V、VZ = ' + Vz + ' V、RS = ' + Rs + ' Ω，負載電流 ' + IL + ' mA，稽納電流 IZ 為多少？', [d(Iz, 2) + ' mA', d(Is, 2) + ' mA', d(Is + IL, 2) + ' mA', d(Vi / Rs * 1000 - IL, 2) + ' mA'],
-              'IS = (Vi − VZ) ÷ RS = ' + (Vi - Vz) + ' ÷ ' + Rs + ' = ' + d(Is, 2) + ' mA；IZ = IS − IL = ' + d(Iz, 2) + ' mA。'];
+              'IS = (Vi − VZ) ÷ RS = ' + (Vi - Vz) + ' ÷ ' + Rs + ' = ' + d(Is, 2) + ' mA；IZ = IS − IL = ' + d(Iz, 2) + ' mA。',
+              figZener(Vi + ' V', 'RS = ' + Rs + ' Ω', 'VZ = ' + Vz + ' V', 'IL = ' + IL + ' mA')];
           } },
           { t: '截波、箝位、稽納', g: function (R) {
             var Vz = R.pick([5, 6.2, 10, 12]), dV = R.pick([0.01, 0.02, 0.05, 0.1]), dT = R.pick([10, 20, 25, 50]);
             var TC = dV / (Vz * dT) * 100;
             return ['稽納電壓 ' + Vz + ' V，溫度上升 ' + dT + ' °C 時 VZ 增加 ' + dV + ' V，溫度係數約為多少？', [d(TC, 4) + ' %/°C', d(dV / dT * 100, 3) + ' %/°C', d(dV / Vz * 100, 3) + ' %/°C', d(TC * 10, 3) + ' %/°C'],
               'TC = ΔVZ ÷ (VZ × ΔT) × 100% = ' + dV + ' ÷ (' + Vz + ' × ' + dT + ') × 100% = ' + d(TC, 4) + ' %/°C。'];
+          } },
+          { t: '看圖判斷二極體導通', g: function (R) {
+            var V1 = R.pick([5, 8, 10, 12]), V2 = R.pick([3, 4, 6, 9]), Rl = R.pick([1, 2, 4.7, 10]), ideal = Math.random() < 0.5;
+            if (V1 === V2) V2 = V1 - 2;
+            var Vh = Math.max(V1, V2), Vo = ideal ? Vh : Vh - 0.7, I = Vo / Rl;
+            return ['如圖所示，二極體' + (ideal ? '為理想' : '為矽二極體（導通壓降 0.7 V）') + '，流過 ' + Rl + ' kΩ 的電流 I 為多少？', [d(I, 3) + ' mA', d((V1 + V2 - (ideal ? 0 : 1.4)) / Rl, 3) + ' mA', d((Math.min(V1, V2) - (ideal ? 0 : 0.7)) / Rl, 3) + ' mA', d(ideal ? (Vh - 0.7) / Rl : Vh / Rl, 3) + ' mA'],
+              '電壓較高的 ' + Vh + ' V 那顆先導通，使輸出 = ' + d(Vo, 2) + ' V，另一顆變成逆偏截止。I = ' + d(Vo, 2) + ' ÷ ' + Rl + ' kΩ = ' + d(I, 3) + ' mA。',
+              figTwoDiode(V1 + ' V', V2 + ' V', Rl + ' kΩ')];
+          } },
+          { t: '看圖判斷截波', g: function (R) {
+            var Vm = R.pick([10, 12, 15, 20]), VB = R.pick([2, 3, 4, 5]), ideal = Math.random() < 0.5, top = ideal ? VB : VB + 0.7;
+            return ['如圖所示，vi = ' + Vm + ' sin ωt V，二極體' + (ideal ? '為理想' : '導通壓降 0.7 V') + '，輸出 vo 的範圍為？', [H.n(-Vm) + ' V ～ ' + d(top, 1) + ' V', H.n(-d(top, 1)) + ' V ～ ' + Vm + ' V', H.n(-Vm) + ' V ～ ' + Vm + ' V', '0 V ～ ' + d(top, 1) + ' V'],
+              'vi 大於 ' + d(top, 1) + ' V 時二極體導通，輸出被限制在 VB' + (ideal ? '' : ' + 0.7') + ' = ' + d(top, 1) + ' V；負半週二極體逆偏開路，vo = vi，最低 ' + H.n(-Vm) + ' V。',
+              figClip('vi', 'R', 'VB = ' + VB + ' V')];
           } }
         ]
       },
@@ -169,7 +290,8 @@
               [3.7, 3.0, 8.0, '主動區', 'VBE = 0.7 V 且 VC > VB'],
               [1.0, 1.2, 5.0, '截止區', 'VBE 為負（BE 逆偏）']]);
             return ['NPN 矽電晶體量得 VB = ' + c[0] + ' V、VE = ' + c[1] + ' V、VC = ' + c[2] + ' V，工作在哪一區？', [c[3]].concat(['主動區', '飽和區', '截止區', '崩潰區'].filter(function (x) { return x !== c[3]; })),
-              c[4] + ' → ' + c[3] + '。判斷：VBE ≈ 0.7 V 且 VC > VB → 主動；VC < VB → 飽和；VBE < 0.5 V → 截止。'];
+              c[4] + ' → ' + c[3] + '。判斷：VBE ≈ 0.7 V 且 VC > VB → 主動；VC < VB → 飽和；VBE < 0.5 V → 截止。',
+              figRegion(c[0] + ' V', c[1] + ' V', c[2] + ' V')];
           } },
           { t: '直流偏壓', g: function (R) {
             var Vcc = R.pick([10, 12, 15, 20]), RB = R.pick([200, 300, 470, 500, 1000]), RC = R.pick([1, 2, 2.2, 3]), beta = R.pick([50, 80, 100]);
@@ -178,20 +300,23 @@
             if (sat) { RB = 1000; IB = (Vcc - 0.7) / RB; IC = beta * IB; VCE = Vcc - IC * RC; }
             return ['固定偏壓：VCC = ' + Vcc + ' V、RB = ' + RB + ' kΩ、RC = ' + RC + ' kΩ、β = ' + beta + '（VBE = 0.7 V），IC 與 VCE 為何？',
               [d(IC, 3) + ' mA、' + d(VCE, 2) + ' V', d(Vcc / RB * beta, 3) + ' mA、' + d(Vcc - Vcc / RB * beta * RC, 2) + ' V', d(IB, 4) + ' mA、' + d(Vcc - IB * RC, 2) + ' V', d(IC, 3) + ' mA、' + d(IC * RC, 2) + ' V'],
-              'IB = (VCC − VBE) ÷ RB = ' + d(Vcc - 0.7, 1) + ' ÷ ' + RB + 'k = ' + d(IB * 1000, 2) + ' μA；IC = βIB = ' + d(IC, 3) + ' mA；VCE = VCC − ICRC = ' + d(VCE, 2) + ' V。'];
+              'IB = (VCC − VBE) ÷ RB = ' + d(Vcc - 0.7, 1) + ' ÷ ' + RB + 'k = ' + d(IB * 1000, 2) + ' μA；IC = βIB = ' + d(IC, 3) + ' mA；VCE = VCC − ICRC = ' + d(VCE, 2) + ' V。',
+              figBias({ V: 'VCC = ' + Vcc + ' V', RB: 'RB = ' + RB + ' kΩ', RC: 'RC = ' + RC + ' kΩ' })];
           } },
           { t: '直流偏壓', g: function (R) {
             var Vcc = R.pick([10, 12, 15]), RB = R.pick([100, 200, 300]), RE = R.pick([0.5, 1, 2]), beta = R.pick([50, 99, 100]);
             var IB = (Vcc - 0.7) / (RB + (1 + beta) * RE), IC = beta * IB;
             return ['射極回授偏壓：VCC = ' + Vcc + ' V、RB = ' + RB + ' kΩ、RE = ' + RE + ' kΩ、β = ' + beta + '，IB 約為多少？', [d(IB * 1000, 2) + ' μA', d((Vcc - 0.7) / RB * 1000, 2) + ' μA', d((Vcc - 0.7) / (RB + RE) * 1000, 2) + ' μA', d((Vcc - 0.7) / (RB + beta * RE * 10) * 1000, 2) + ' μA'],
-              'IB = (VCC − VBE) ÷ [RB + (1 + β)RE] = ' + d(Vcc - 0.7, 1) + ' ÷ [' + RB + ' + ' + (1 + beta) + ' × ' + RE + '] kΩ = ' + d(IB * 1000, 2) + ' μA；IC = βIB ≈ ' + d(IC, 3) + ' mA。'];
+              'IB = (VCC − VBE) ÷ [RB + (1 + β)RE] = ' + d(Vcc - 0.7, 1) + ' ÷ [' + RB + ' + ' + (1 + beta) + ' × ' + RE + '] kΩ = ' + d(IB * 1000, 2) + ' μA；IC = βIB ≈ ' + d(IC, 3) + ' mA。',
+              figBias({ V: 'VCC = ' + Vcc + ' V', RB: 'RB = ' + RB + ' kΩ', RC: 'RC', RE: 'RE = ' + RE + ' kΩ' })];
           } },
           { t: '直流偏壓', g: function (R) {
             var Vcc = R.pick([10, 12, 15, 18, 20]), p = R.pick([[40, 10], [30, 10], [20, 10], [56, 10], [47, 10]]), RE = R.pick([0.5, 1, 1.5, 2]);
             var VB = Vcc * p[1] / (p[0] + p[1]), IE = (VB - 0.7) / RE;
             if (IE <= 0) { Vcc = 20; VB = Vcc * p[1] / (p[0] + p[1]); IE = (VB - 0.7) / RE; }
             return ['分壓偏壓（β 很大）：VCC = ' + Vcc + ' V、R1 = ' + p[0] + ' kΩ、R2 = ' + p[1] + ' kΩ、RE = ' + RE + ' kΩ，IE 約為多少？', [d(IE, 3) + ' mA', d(VB / RE, 3) + ' mA', d((Vcc * p[0] / (p[0] + p[1]) - 0.7) / RE, 3) + ' mA', d((VB - 0.7) / (RE * 10), 3) + ' mA'],
-              'VB = VCC × R2 ÷ (R1 + R2) = ' + d(VB, 3) + ' V；IE = (VB − VBE) ÷ RE = ' + d(VB - 0.7, 3) + ' ÷ ' + RE + ' = ' + d(IE, 3) + ' mA。'];
+              'VB = VCC × R2 ÷ (R1 + R2) = ' + d(VB, 3) + ' V；IE = (VB − VBE) ÷ RE = ' + d(VB - 0.7, 3) + ' ÷ ' + RE + ' = ' + d(IE, 3) + ' mA。',
+              figBias({ V: 'VCC = ' + Vcc + ' V', R1: 'R₁ = ' + p[0] + ' kΩ', R2: 'R₂ = ' + p[1] + ' kΩ', RC: 'RC', RE: 'RE = ' + RE + ' kΩ' })];
           } },
           { t: '飽和判斷', g: function (R) {
             var Vcc = R.pick([5, 10, 12]), RC = R.pick([1, 2, 4.7]), beta = R.pick([50, 100]), IB = R.pick([20, 50, 100, 200]);
@@ -203,6 +328,12 @@
             var Vcc = R.pick([10, 12, 15, 20]), RC = R.pick([1, 2, 2.5, 4, 5]);
             return ['VCC = ' + Vcc + ' V、RC = ' + RC + ' kΩ（無 RE），直流負載線在兩軸的端點為？', ['(VCE, IC) = (' + Vcc + ' V, 0) 與 (0, ' + d(Vcc / RC, 2) + ' mA)', '(' + Vcc + ' V, 0) 與 (0, ' + d(Vcc * RC, 2) + ' mA)', '(' + d(Vcc / 2, 1) + ' V, 0) 與 (0, ' + d(Vcc / RC, 2) + ' mA)', '(0, ' + Vcc + ' V) 與 (' + d(Vcc / RC, 2) + ' mA, 0)'],
               '橫軸 VCE、縱軸 IC：截止端 (VCC, 0)、飽和端 (0, VCC ÷ RC) = (0, ' + d(Vcc / RC, 2) + ' mA)。'];
+          } },
+          { t: '看圖讀負載線', g: function (R) {
+            var Vcc = R.pick([10, 12, 15, 20, 24]), RC = R.pick([1, 2, 2.5, 4, 5]), Is = Vcc / RC;
+            return ['某固定偏壓電路（無 RE）的直流負載線如圖所示，則 VCC 與 RC 為何？', ['VCC = ' + Vcc + ' V、RC = ' + RC + ' kΩ', 'VCC = ' + Vcc + ' V、RC = ' + d(1 / RC, 2) + ' kΩ', 'VCC = ' + d(Is, 2) + ' V、RC = ' + RC + ' kΩ', 'VCC = ' + Vcc + ' V、RC = ' + d(Vcc * Is, 1) + ' kΩ'],
+              '負載線與橫軸交點 = VCC = ' + Vcc + ' V；與縱軸交點 = VCC ÷ RC = ' + d(Is, 2) + ' mA → RC = ' + Vcc + ' ÷ ' + d(Is, 2) + ' = ' + RC + ' kΩ。',
+              figLoad(Vcc + ' V', d(Is, 2) + ' mA')];
           } }
         ]
       },
@@ -229,13 +360,15 @@
           { t: 'CE 電壓增益', g: function (R) {
             var IE = R.pick([1, 2, 2.5, 5]), RC = R.pick([2, 2.5, 4, 5, 10]), re = 25 / IE, Av = RC * 1000 / re;
             return ['CE 放大器（射極完全旁路），IE = ' + IE + ' mA（VT = 25 mV）、RC = ' + RC + ' kΩ，電壓增益 Av 約為多少？', [H.n(-Math.round(Av)), String(Math.round(Av)), H.n(-Math.round(Av / 10)), H.n(-Math.round(RC * 1000 / 25))],
-              're = 25 ÷ ' + IE + ' = ' + d(re, 2) + ' Ω；Av = −RC ÷ re = −' + RC * 1000 + ' ÷ ' + d(re, 2) + ' = ' + H.n(-Math.round(Av)) + '（負號代表反相）。'];
+              're = 25 ÷ ' + IE + ' = ' + d(re, 2) + ' Ω；Av = −RC ÷ re = −' + RC * 1000 + ' ÷ ' + d(re, 2) + ' = ' + H.n(-Math.round(Av)) + '（負號代表反相）。',
+              figBias({ V: 'VCC', R1: 'R₁', R2: 'R₂', RC: 'RC = ' + RC + ' kΩ', RE: 'RE', ce: true, ac: true })];
           } },
           { t: 'CE 電壓增益', g: function (R) {
             var IE = R.pick([1, 2, 5]), RC = R.pick([4, 5, 10]), RE = R.pick([0.5, 1, 2]), re = 25 / IE;
             var Av = RC * 1000 / (re + RE * 1000);
             return ['CE 放大器射極電阻 RE = ' + RE + ' kΩ 未旁路，re = ' + d(re, 1) + ' Ω、RC = ' + RC + ' kΩ，Av 約為多少？', [H.n(-+d(Av, 2)), H.n(-+d(RC * 1000 / re, 0)), H.n(+d(Av, 2)), H.n(-+d(RC / (RE + RC), 2))],
-              'Av ≈ −RC ÷ (re + RE) = −' + RC * 1000 + ' ÷ ' + d(re + RE * 1000, 1) + ' ≈ ' + H.n(-+d(Av, 2)) + '。加未旁路 RE 增益變小但較穩定。'];
+              'Av ≈ −RC ÷ (re + RE) = −' + RC * 1000 + ' ÷ ' + d(re + RE * 1000, 1) + ' ≈ ' + H.n(-+d(Av, 2)) + '。加未旁路 RE 增益變小但較穩定。',
+              figBias({ V: 'VCC', R1: 'R₁', R2: 'R₂', RC: 'RC = ' + RC + ' kΩ', RE: 'RE = ' + RE + ' kΩ', ac: true })];
           } },
           { t: '功率增益', g: function (R) {
             var Av = R.pick([20, 50, 80, 100, 150]), Ai = R.pick([10, 20, 40, 50]);

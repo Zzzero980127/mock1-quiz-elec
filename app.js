@@ -2,6 +2,7 @@
  * 題目格式（寫在 data/*.js）：
  *   靜態題：['主題', '題目', ['正解', '錯1', '錯2', '錯3'], '解析']
  *   類題產生器：{ t: '主題', g: function (R) { return ['題目', ['正解', ...], '解析']; } }
+ *   有圖的題目：在解析後面多放一個 SVG 字串（用 data/_draw.js 的 DR 畫）
  *     → 每次出題都換新數字，用來練「類似題」
  *   英文單字等可在單元加 gen: function () { return [靜態題...] }
  *
@@ -14,6 +15,12 @@
 
   // ---------- 更新日誌（新版本加在最上面） ----------
   var CHANGELOG = [
+    { v: '1.1', date: '2026-10-11', items: [
+      '依歷屆一模題型加上圖：電路圖（串並聯、電橋、Δ 接、戴維寧、節點、二極體、整流、稽納、電晶體偏壓、CE 放大器）、波形（脈波、電流波形、漣波、負載線）、示波器螢幕、邏輯閘、時序圖、解碼器',
+      '新增看圖題型：求 R_AB、戴維寧等效、最大功率、電表接法、二極體導通、截波、讀負載線、認邏輯閘、特殊接法、時序圖、二極體邏輯、邏輯電路寫布林式、梯形脈波工作週期',
+      '示波器題改成看螢幕數格子，和考試一樣',
+      '錯題檢討、錯題紀錄也會顯示圖；作答紀錄、錯題本、弱點分析全部保留'
+    ] },
     { v: '1.0', date: '2026-10-11', items: [
       '初版：電子科（資電類）一模題庫',
       '共同科目：國文、英文、數學C',
@@ -75,7 +82,7 @@
     var q = QH.clean(String(raw[0])), opts = QH.fill(raw[1]).slice(0, 4), exp = QH.clean(String(raw[2] || ''));
     var order = shuffle(opts.map(function (_, i) { return i; }));
     return {
-      tpl: t, q: q, exp: exp,
+      tpl: t, q: q, exp: exp, fig: raw[3] || '',
       opts: order.map(function (i) { return String(opts[i]); }),
       ans: order.indexOf(0)
     };
@@ -254,6 +261,7 @@
     $('qTag').textContent = SUBJ[t.si].name + '・' + SUBJ[t.si].units[t.ui].name + '・' + t.tag;
     $('qBar').style.width = (s.i / s.qs.length * 100) + '%';
     $('qText').textContent = q.q;
+    $('qFig').innerHTML = q.fig; $('qFig').hidden = !q.fig;
     var box = $('qOpts'); box.innerHTML = '';
     q.opts.forEach(function (o, i) {
       var b = document.createElement('button');
@@ -281,7 +289,7 @@
     // 錯題本：答錯 +1，之後答對 -1，歸零就移出
     if (!ok) {
       store.wrong[t.id] = (store.wrong[t.id] || 0) + 1;
-      store.log.unshift({ id: t.id, q: q.q, mine: q.opts[i], ans: q.opts[q.ans], exp: q.exp, time: Date.now() });
+      store.log.unshift({ id: t.id, q: q.q, fig: q.fig, mine: q.opts[i], ans: q.opts[q.ans], exp: q.exp, time: Date.now() });
       if (store.log.length > 300) store.log.length = 300;
     } else if (store.wrong[t.id]) {
       store.wrong[t.id]--; if (store.wrong[t.id] <= 0) delete store.wrong[t.id];
@@ -326,7 +334,7 @@
     session.wrongTpls = wrong.map(function (r) { return r.q.tpl; });
     $('rWrongCard').style.display = wrong.length ? '' : 'none';
     $('rWrong').innerHTML = wrong.map(function (r) {
-      return '<div class="wrong"><div class="q">' + esc(r.q.q) + '</div><div class="badc">你的答案：' + esc(r.q.opts[r.mine]) + '</div><div class="okc">正解：' + esc(r.q.opts[r.q.ans]) + '</div><div class="hint">' + esc(r.q.exp) + '</div></div>';
+      return '<div class="wrong"><div class="q">' + esc(r.q.q) + '</div>' + (r.q.fig ? '<div class="fig">' + r.q.fig + '</div>' : '') + '<div class="badc">你的答案：' + esc(r.q.opts[r.mine]) + '</div><div class="okc">正解：' + esc(r.q.opts[r.q.ans]) + '</div><div class="hint">' + esc(r.q.exp) + '</div></div>';
     }).join('');
     $('qBar').style.width = '100%';
     show('result');
@@ -347,7 +355,7 @@
       var g = groups[k], t = g.t;
       return '<details class="lg"><summary><b>' + esc(SUBJ[t.si].name) + '・' + esc(t.tag) + '</b> <span class="muted">（' + esc(SUBJ[t.si].units[t.ui].name) + '）錯 ' + g.items.length + ' 次</span> <button class="btn small" data-k="' + esc(k) + '">練類題</button></summary>' +
         g.items.slice(0, 10).map(function (l) {
-          return '<div class="wrong"><div class="q">' + esc(l.q) + '</div><div class="badc">你選：' + esc(l.mine) + '</div><div class="okc">正解：' + esc(l.ans) + '</div><div class="hint">' + esc(l.exp) + '<br>' + new Date(l.time).toLocaleString() + '</div></div>';
+          return '<div class="wrong"><div class="q">' + esc(l.q) + '</div>' + (l.fig ? '<div class="fig">' + l.fig + '</div>' : '') + '<div class="badc">你選：' + esc(l.mine) + '</div><div class="okc">正解：' + esc(l.ans) + '</div><div class="hint">' + esc(l.exp) + '<br>' + new Date(l.time).toLocaleString() + '</div></div>';
         }).join('') + '</details>';
     }).join('');
     Array.prototype.forEach.call(box.querySelectorAll('button[data-k]'), function (b) {

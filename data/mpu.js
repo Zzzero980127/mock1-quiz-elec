@@ -1,6 +1,14 @@
 /* 微處理機（專二）：一模範圍 第一～三單元（依一模全科筆記） */
 (function () {
   var H = QH, d = H.dec;
+
+  // 3 對 8 解碼器選晶片
+  function figDecoder() {
+    var D = DR, T = D.text, s = '<rect x="110" y="20" width="90" height="180" rx="3"/>' + T(155, 100, '3 對 8', 'middle') + T(155, 118, '解碼器', 'middle');
+    [['A15', 'C（MSB）'], ['A14', 'B'], ['A13', 'A（LSB）']].forEach(function (p, i) { var y = 60 + i * 50; s += D.line(40, y, 110, y) + T(34, y + 4, p[0], 'end') + T(116, y + 4, p[1].charAt(0), 'start', 11); });
+    for (var k = 0; k < 8; k++) { var y = 32 + k * 22; s += T(194, y + 4, 'Y' + k, 'end', 11) + D.line(200, y, 250, y) + T(256, y + 4, '→ 晶片 ' + k, 'start', 12); }
+    return D.svg(330, 215, s + T(40, 210, 'C 為最高位元', 'start', 11));
+  }
   function hex(n, w) { var s = n.toString(16).toUpperCase(); while (s.length < (w || 4)) s = '0' + s; return s + 'H'; }
   function kw(n) { // 字數寫成 K、M
     if (n >= 1048576 && n % 1048576 === 0) return n / 1048576 + 'M';
@@ -90,7 +98,8 @@
           { t: '位址解碼', g: function (R) {
             var top = R.int(0, 7), rest = R.int(0, 0x1FFF), addr = (top << 13) | rest;
             return ['16 位元位址以最高 3 條位址線 A15～A13 接 3 對 8 解碼器選晶片，位址 ' + hex(addr) + ' 會選到解碼器第幾號輸出（Y0～Y7）？', ['Y' + top, 'Y' + ((top + 1) % 8), 'Y' + (7 - top === top ? (top + 2) % 8 : 7 - top), 'Y' + ((top + 4) % 8)],
-              hex(addr) + ' 的最高 3 位元 A15A14A13 = ' + ('00' + top.toString(2)).slice(-3) + ' = ' + top + ' → Y' + top + '。'];
+              hex(addr) + ' 的最高 3 位元 A15A14A13 = ' + ('00' + top.toString(2)).slice(-3) + ' = ' + top + ' → Y' + top + '。',
+              figDecoder()];
           } }
         ]
       },

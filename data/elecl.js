@@ -17,13 +17,15 @@
           { t: '示波器', g: function (R) {
             var div = R.pick([2, 4, 5, 8, 10]), td = R.pick([[0.1, 'ms'], [0.2, 'ms'], [0.5, 'ms'], [1, 'ms'], [10, 'μs'], [20, 'μs'], [50, 'μs']]);
             var T = div * td[0] * (td[1] === 'ms' ? 1e-3 : 1e-6), f = 1 / T;
-            return ['示波器 TIME/DIV = ' + td[0] + ' ' + td[1] + '，一個週期佔 ' + div + ' 格，信號頻率為多少？', [si(f, 'Hz'), si(f * 10, 'Hz'), si(f / 10, 'Hz'), si(1 / (td[0] * (td[1] === 'ms' ? 1e-3 : 1e-6)), 'Hz')],
-              'T = ' + div + ' × ' + td[0] + ' ' + td[1] + ' = ' + si(T, 's') + '；f = 1 ÷ T = ' + si(f, 'Hz') + '。'];
+            return ['示波器 TIME/DIV = ' + td[0] + ' ' + td[1] + '，螢幕上的波形如圖所示（共 10 × 8 格），信號頻率為多少？', [si(f, 'Hz'), si(f * 10, 'Hz'), si(f / 10, 'Hz'), si(1 / (td[0] * (td[1] === 'ms' ? 1e-3 : 1e-6)), 'Hz')],
+              'T = ' + div + ' × ' + td[0] + ' ' + td[1] + ' = ' + si(T, 's') + '；f = 1 ÷ T = ' + si(f, 'Hz') + '。',
+              DR.scope(div, 4)];
           } },
           { t: '示波器', g: function (R) {
             var div = R.pick([2, 3, 4, 5, 6]), vd = R.pick([0.1, 0.2, 0.5, 1, 2, 5]), x10 = Math.random() < 0.5, Vpp = div * vd * (x10 ? 10 : 1);
-            return ['示波器 VOLT/DIV = ' + vd + ' V，波形峰對峰佔 ' + div + ' 格，探棒在 ' + (x10 ? '×10' : '×1') + ' 檔，信號峰對峰值為多少？', [d(Vpp, 2) + ' V', d(x10 ? Vpp / 10 : Vpp * 10, 2) + ' V', d(Vpp / 2, 2) + ' V', d(div * vd / 10, 3) + ' V'],
-              'Vp-p = 格數 × VOLT/DIV × 探棒倍率 = ' + div + ' × ' + vd + ' × ' + (x10 ? 10 : 1) + ' = ' + d(Vpp, 2) + ' V。'];
+            return ['示波器 VOLT/DIV = ' + vd + ' V，螢幕上的波形如圖所示（共 10 × 8 格），探棒在 ' + (x10 ? '×10' : '×1') + ' 檔，信號峰對峰值為多少？', [d(Vpp, 2) + ' V', d(x10 ? Vpp / 10 : Vpp * 10, 2) + ' V', d(Vpp / 2, 2) + ' V', d(div * vd / 10, 3) + ' V'],
+              'Vp-p = 格數 × VOLT/DIV × 探棒倍率 = ' + div + ' × ' + vd + ' × ' + (x10 ? 10 : 1) + ' = ' + d(Vpp, 2) + ' V。',
+              DR.scope(4, div)];
           } }
         ]
       },
