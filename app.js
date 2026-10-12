@@ -14,6 +14,9 @@
 
   // ---------- 更新日誌（新版本加在最上面） ----------
   var CHANGELOG = [
+    { v: '1.3.1', date: '2026-10-12', items: [
+      '困難版名稱更正為「模考類似題」（題目是仿歷屆一模模考，不是統測），作答紀錄不受影響'
+    ] },
     { v: '1.3', date: '2026-10-12', items: [
       '加入 110、111 學年度一模的題型（原本只參考 112～114），只收 115 一模範圍內的單元',
       '困難版新增：色碼與誤差、額定功率串並聯、換參考點求電位、電流源功率、迴路方程式係數、兩次量測求 E 與內阻、電表接法誤差、燈泡規格選用、BJT 由三腳電壓判斷工作區、電晶體開關驅動 LED、示波器求增益、含隨意項的卡諾圖（SOP／POS）、TTL 故障判斷、萬用閘 IC 顆數、MIPS 與時脈計算、跳脫字元、sizeof、字元運算等',
@@ -134,7 +137,7 @@
   function renderHome() {
     $('modeEasy').classList.toggle('on', !isHardMode());
     $('modeHard').classList.toggle('on', isHardMode());
-    $('modeHint').textContent = isHardMode() ? '困難版：仿統測／歷屆一模題型，多步驟計算與綜合判斷。紀錄與簡單版分開。' : '簡單版：基本觀念與單一公式，適合先熟悉重點。';
+    $('modeHint').textContent = isHardMode() ? '困難版：仿歷屆一模模考題型，多步驟計算與綜合判斷。紀錄與簡單版分開。' : '簡單版：基本觀念與單一公式，適合先熟悉重點。';
     var g = $('subjGrid'); g.innerHTML = '';
     SUBJ.forEach(function (s, si) {
       var cnt = TEMPLATES.filter(function (t) { return t.si === si && inMode(t); }).length;
