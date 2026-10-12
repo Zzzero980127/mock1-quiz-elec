@@ -58,6 +58,16 @@ label.opt{display:flex;align-items:center;gap:6px;font-size:.95rem}
 .opts button.ok{border-color:var(--ok);background:var(--ok-soft)}
 .opts button.bad{border-color:var(--bad);background:var(--bad-soft)}
 .opts button:disabled{cursor:default}
+.opts button.pick{border-color:var(--accent);background:var(--accent-soft)}
+.qnav{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 2px}
+.qnav button{min-width:2.2em;padding:3px 0;border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:6px;cursor:pointer;font-family:inherit;font-size:.82rem}
+.qnav button.done{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft)}
+.qnav button.cur{border-color:var(--accent);font-weight:700}
+.timer{font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.timer.low{color:var(--bad)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.overlay .card{text-align:center;max-width:320px;width:100%}
+.timer.hidden,.overlay.hidden,.qnav.hidden{display:none}
 .exp{border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 12px;border-radius:6px;margin:6px 0 12px;white-space:pre-wrap}
 .verdict{font-weight:700;margin-bottom:6px}
 .verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
@@ -160,6 +170,13 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
         </label>
         <label class="opt"><input type="checkbox" id="optWrongFirst"> 優先出錯過的題目</label>
       </div>
+      <div class="row" style="margin-top:8px">
+        <label class="opt"><input type="checkbox" id="optExam"> 測驗模式（全部做完交卷才看答案與詳解，可回上一題改答案）</label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label class="opt"><input type="checkbox" id="optTimer"> 計時器</label>
+        <label class="opt"><input type="number" id="timerMin" min="1" max="300" step="1" style="width:4.5em"> 分鐘</label>
+      </div>
       <div class="row" style="margin-top:14px">
         <button class="btn" id="startBtn">開始練習</button>
         <button class="btn ghost" id="wrongBtn">錯題本</button>
@@ -195,15 +212,19 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
 
   <!-- 作答 -->
   <div id="quiz" class="hidden">
-    <div class="qtop"><span id="qProg"></span><span><span class="tag" id="qTag"></span></span></div>
+    <div class="qtop"><span id="qProg"></span><span class="timer hidden" id="qTimer"></span><span><span class="tag" id="qTag"></span></span></div>
     <div class="bar"><i id="qBar"></i></div>
+    <div class="qnav hidden" id="qNav"></div>
     <div class="card">
       <div class="qtext" id="qText"></div>
       <div class="opts" id="qOpts"></div>
       <div id="qFeedback"></div>
       <div class="row" style="justify-content:space-between">
         <button class="btn ghost small" id="quitBtn">結束並看成績</button>
-        <button class="btn hidden" id="nextBtn">下一題 ▶</button>
+        <span class="row">
+          <button class="btn ghost hidden" id="prevBtn">◀ 上一題</button>
+          <button class="btn hidden" id="nextBtn">下一題 ▶</button>
+        </span>
       </div>
     </div>
   </div>
@@ -225,31 +246,33 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
   </div>
 </div>
 
+<div class="overlay hidden" id="timeUp"><div class="card"><div class="big" style="font-size:1.8rem">時間結束</div><div class="row" style="justify-content:center;margin-top:14px"><button class="btn" id="timeUpBtn">看測驗結果</button></div></div></div>
+
 <script>window.QUIZ_DATA = [];</script>
-<script src="data/_helpers.js?v=7"></script>
-<script src="data/_figures.js?v=7"></script>
-<script src="data/_draw.js?v=7"></script>
-<script src="data/chinese.js?v=7"></script>
-<script src="data/english.js?v=7"></script>
-<script src="data/math.js?v=7"></script>
-<script src="data/bee.js?v=7"></script>
-<script src="data/beel.js?v=7"></script>
-<script src="data/elec.js?v=7"></script>
-<script src="data/elecl.js?v=7"></script>
-<script src="data/mpu.js?v=7"></script>
-<script src="data/dl.js?v=7"></script>
-<script src="data/prog.js?v=7"></script>
-<script src="data/hard_chinese.js?v=7"></script>
-<script src="data/hard_english.js?v=7"></script>
-<script src="data/hard_math.js?v=7"></script>
-<script src="data/hard_bee.js?v=7"></script>
-<script src="data/hard_beel.js?v=7"></script>
-<script src="data/hard_elec.js?v=7"></script>
-<script src="data/hard_elecl.js?v=7"></script>
-<script src="data/hard_mpu.js?v=7"></script>
-<script src="data/hard_dl.js?v=7"></script>
-<script src="data/hard_prog.js?v=7"></script>
-<script src="data/add_v13.js?v=7"></script>
-<script src="app.js?v=7"></script>
+<script src="data/_helpers.js?v=8"></script>
+<script src="data/_figures.js?v=8"></script>
+<script src="data/_draw.js?v=8"></script>
+<script src="data/chinese.js?v=8"></script>
+<script src="data/english.js?v=8"></script>
+<script src="data/math.js?v=8"></script>
+<script src="data/bee.js?v=8"></script>
+<script src="data/beel.js?v=8"></script>
+<script src="data/elec.js?v=8"></script>
+<script src="data/elecl.js?v=8"></script>
+<script src="data/mpu.js?v=8"></script>
+<script src="data/dl.js?v=8"></script>
+<script src="data/prog.js?v=8"></script>
+<script src="data/hard_chinese.js?v=8"></script>
+<script src="data/hard_english.js?v=8"></script>
+<script src="data/hard_math.js?v=8"></script>
+<script src="data/hard_bee.js?v=8"></script>
+<script src="data/hard_beel.js?v=8"></script>
+<script src="data/hard_elec.js?v=8"></script>
+<script src="data/hard_elecl.js?v=8"></script>
+<script src="data/hard_mpu.js?v=8"></script>
+<script src="data/hard_dl.js?v=8"></script>
+<script src="data/hard_prog.js?v=8"></script>
+<script src="data/add_v13.js?v=8"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

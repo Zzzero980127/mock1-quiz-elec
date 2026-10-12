@@ -14,6 +14,11 @@
 
   // ---------- 更新日誌（新版本加在最上面） ----------
   var CHANGELOG = [
+    { v: '1.4', date: '2026-10-12', items: [
+      '新增「測驗模式」（設定區勾選）：全部做完交卷才顯示答案與詳解，作答中可按上一題／下一題或題號回去改答案',
+      '新增計時器（設定區勾選、可自訂分鐘數）：時間到會跳出「時間結束」，按「看測驗結果」看成績',
+      '原本的作答紀錄、錯題本都保留'
+    ] },
     { v: '1.3.1', date: '2026-10-12', items: [
       '困難版名稱更正為「模考類似題」（題目是仿歷屆一模模考，不是統測），作答紀錄不受影響'
     ] },
@@ -253,8 +258,13 @@
 
   function startSession(qs, title) {
     if (!qs.length) { flash('沒有可以出的題目，請先選科目或單元。'); return; }
-    session = { qs: qs, i: 0, results: [], title: title || '' };
+    if (session) stopTimer();
+    var exam = !!store.exam;
+    session = { qs: qs, i: 0, results: [], title: (title || '') + (exam ? '（測驗模式）' : ''), exam: exam, picks: exam ? qs.map(function () { return null; }) : null };
+    $('quitBtn').textContent = exam ? '交卷' : '結束並看成績';
+    $('timeUp').classList.add('hidden');
     show('quiz'); renderQ();
+    if (store.timerOn && store.timerMin > 0) startTimer(session, store.timerMin);
   }
 
   function startNormal() {
@@ -296,20 +306,41 @@
       var b = document.createElement('button');
       b.innerHTML = '<span class="k">' + (i + 1) + '.</span>' + fmt(o);
       b.onclick = function () { answer(i); };
+      if (s.exam && s.picks[s.i] === i) b.classList.add('pick');
       box.appendChild(b);
     });
     $('qFeedback').innerHTML = '';
-    $('nextBtn').classList.add('hidden');
     s.answered = false;
+    $('prevBtn').classList.toggle('hidden', !s.exam);
+    $('prevBtn').disabled = s.i === 0;
+    var nav = $('qNav'); nav.classList.toggle('hidden', !s.exam);
+    if (s.exam) {
+      $('nextBtn').classList.toggle('hidden', s.i + 1 >= s.qs.length);
+      $('nextBtn').textContent = '下一題 ▶';
+      $('qBar').style.width = (s.picks.filter(function (p) { return p != null; }).length / s.qs.length * 100) + '%';
+      nav.innerHTML = s.qs.map(function (_, k) { return '<button class="' + (s.picks[k] != null ? 'done' : '') + (k === s.i ? ' cur' : '') + '" data-k="' + k + '">' + (k + 1) + '</button>'; }).join('');
+      Array.prototype.forEach.call(nav.children, function (b) { b.onclick = function () { s.i = +b.getAttribute('data-k'); renderQ(); }; });
+    } else $('nextBtn').classList.add('hidden');
   }
 
   function answer(i) {
-    var s = session; if (s.answered) return; s.answered = true;
-    var q = s.qs[s.i], t = q.tpl, ok = i === q.ans;
+    var s = session;
+    if (s.exam) { s.picks[s.i] = i; renderQ(); return; }
+    if (s.answered) return; s.answered = true;
+    var q = s.qs[s.i], ok = i === q.ans;
     var btns = $('qOpts').children;
     for (var k = 0; k < btns.length; k++) { btns[k].disabled = true; if (k === q.ans) btns[k].classList.add('ok'); }
     if (!ok) btns[i].classList.add('bad');
+    record(q, i);
+    s.results.push({ q: q, mine: i, ok: ok });
+    $('qFeedback').innerHTML = '<div class="exp"><div class="verdict ' + (ok ? 'ok">✔ 答對了' : 'bad">✘ 答錯了，正解是 ' + (q.ans + 1) + '. ' + fmt(q.opts[q.ans])) + '</div>' + fmt(q.exp) + '</div>';
+    $('nextBtn').classList.remove('hidden');
+    $('nextBtn').textContent = s.i + 1 < s.qs.length ? '下一題 ▶' : '看成績';
+    $('nextBtn').focus();
+  }
 
+  function record(q, i) {
+    var t = q.tpl, ok = i === q.ans;
     // 紀錄：主題正確率
     var key = tagKey(t);
     var st = store.stats[key] || { n: 0, c: 0, rw: 0 };
@@ -324,23 +355,57 @@
       store.wrong[t.id]--; if (store.wrong[t.id] <= 0) delete store.wrong[t.id];
     }
     save();
-
-    s.results.push({ q: q, mine: i, ok: ok });
-    $('qFeedback').innerHTML = '<div class="exp"><div class="verdict ' + (ok ? 'ok">✔ 答對了' : 'bad">✘ 答錯了，正解是 ' + (q.ans + 1) + '. ' + fmt(q.opts[q.ans])) + '</div>' + fmt(q.exp) + '</div>';
-    $('nextBtn').classList.remove('hidden');
-    $('nextBtn').textContent = s.i + 1 < s.qs.length ? '下一題 ▶' : '看成績';
-    $('nextBtn').focus();
   }
 
   function next() {
-    if (!session.answered) return;
-    session.i++;
-    if (session.i >= session.qs.length) finish(); else renderQ();
+    var s = session;
+    if (s.exam) { if (s.i + 1 < s.qs.length) { s.i++; renderQ(); } return; }
+    if (!s.answered) return;
+    s.i++;
+    if (s.i >= s.qs.length) finish(); else renderQ();
+  }
+  function prev() { var s = session; if (s.exam && s.i > 0) { s.i--; renderQ(); } }
+
+  // 交卷：測驗模式還有沒作答的題目要按兩次確認
+  var submitArmed = false;
+  function submit() {
+    var s = session;
+    if (s.exam) {
+      var left = s.picks.filter(function (p) { return p == null; }).length;
+      if (left && !submitArmed) {
+        submitArmed = true; $('quitBtn').textContent = '還有 ' + left + ' 題沒寫，再按一次交卷';
+        setTimeout(function () { submitArmed = false; if (session === s) $('quitBtn').textContent = '交卷'; }, 4000);
+        return;
+      }
+    }
+    submitArmed = false;
+    finish();
+  }
+
+  // ---------- 計時器 ----------
+  function fmtTime(sec) { var m = Math.floor(sec / 60), x = sec % 60; return m + ':' + (x < 10 ? '0' : '') + x; }
+  function stopTimer() { if (session && session.timer) { clearInterval(session.timer); session.timer = null; } $('qTimer').classList.add('hidden'); }
+  function startTimer(s, min) {
+    s.end = Date.now() + min * 60000;
+    var el = $('qTimer'); el.classList.remove('hidden', 'low');
+    function tick() {
+      var left = Math.max(0, Math.round((s.end - Date.now()) / 1000));
+      el.textContent = '⏱ ' + fmtTime(left); el.classList.toggle('low', left <= 60);
+      if (!left) { clearInterval(s.timer); s.timer = null; $('timeUp').classList.remove('hidden'); $('timeUpBtn').focus(); }
+    }
+    tick(); s.timer = setInterval(tick, 500);
   }
 
   // ---------- 成績 ----------
   function finish() {
-    var res = session.results;
+    var s = session;
+    stopTimer(); $('timeUp').classList.add('hidden');
+    // 測驗模式：交卷時才一次寫入紀錄（沒作答的題目不記）
+    if (s.exam && !s.done) {
+      s.done = true;
+      s.results = s.qs.map(function (q, k) { var i = s.picks[k]; if (i != null) record(q, i); return { q: q, mine: i, ok: i === q.ans }; });
+    }
+    var res = s.results;
     if (!res.length) { show('home'); renderHome(); return; }
     var c = res.filter(function (r) { return r.ok; }).length;
     $('rScore').textContent = Math.round(c / res.length * 100) + ' 分';
@@ -363,7 +428,7 @@
     session.wrongTpls = wrong.map(function (r) { return r.q.tpl; });
     $('rWrongCard').style.display = wrong.length ? '' : 'none';
     $('rWrong').innerHTML = wrong.map(function (r) {
-      return '<div class="wrong"><div class="q">' + fmt(r.q.q) + '</div>' + (r.q.fig ? '<div class="figbox small">' + r.q.fig + '</div>' : '') + '<div class="badc">你的答案：' + fmt(r.q.opts[r.mine]) + '</div><div class="okc">正解：' + fmt(r.q.opts[r.q.ans]) + '</div><div class="hint">' + fmt(r.q.exp) + '</div></div>';
+      return '<div class="wrong"><div class="q">' + fmt(r.q.q) + '</div>' + (r.q.fig ? '<div class="figbox small">' + r.q.fig + '</div>' : '') + '<div class="badc">你的答案：' + (r.mine == null ? '（未作答）' : fmt(r.q.opts[r.mine])) + '</div><div class="okc">正解：' + fmt(r.q.opts[r.q.ans]) + '</div><div class="hint">' + fmt(r.q.exp) + '</div></div>';
     }).join('');
     $('qBar').style.width = '100%';
     show('result');
@@ -409,7 +474,16 @@
   $('logBtn').onclick = function () { renderLog(); show('log'); };
   $('logBack').onclick = function () { show('home'); renderHome(); };
   $('nextBtn').onclick = next;
-  $('quitBtn').onclick = finish;
+  $('prevBtn').onclick = prev;
+  $('quitBtn').onclick = submit;
+  $('timeUpBtn').onclick = finish;
+  if (store.exam === undefined) store.exam = true;
+  $('optExam').checked = store.exam;
+  $('optExam').onchange = function () { store.exam = this.checked; save(); };
+  $('optTimer').checked = !!store.timerOn;
+  $('timerMin').value = store.timerMin = store.timerMin || 30;
+  $('optTimer').onchange = function () { store.timerOn = this.checked; save(); };
+  $('timerMin').onchange = function () { var v = Math.round(+this.value); if (!(v > 0)) v = 30; if (v > 300) v = 300; this.value = v; store.timerMin = v; save(); };
   $('homeBtn').onclick = function () { show('home'); renderHome(); };
   $('retryWrong').onclick = function () { startSession(session.wrongTpls.map(build), '重練錯題'); };
   $('similarWrong').onclick = function () {
@@ -434,9 +508,11 @@
     clearTimeout(flash.t); flash.t = setTimeout(function () { m.hidden = true; }, 4000);
   }
   document.addEventListener('keydown', function (e) {
-    if ($('quiz').classList.contains('hidden')) return;
+    if ($('quiz').classList.contains('hidden') || !$('timeUp').classList.contains('hidden')) return;
+    if (session && session.exam && e.key === 'ArrowLeft') { prev(); return; }
+    if (session && session.exam && e.key === 'ArrowRight') { next(); return; }
     if (e.key >= '1' && e.key <= '4') { var b = $('qOpts').children[+e.key - 1]; if (b) b.click(); }
-    else if (e.key === 'Enter' && session && session.answered) { e.preventDefault(); next(); }
+    else if (e.key === 'Enter' && session && (session.answered || session.exam)) { e.preventDefault(); next(); }
   });
 
   // ---------- 更新日誌畫面 ----------
