@@ -14,6 +14,9 @@
 
   // ---------- 更新日誌（新版本加在最上面） ----------
   var CHANGELOG = [
+    { v: '1.5', date: '2026-10-12', items: [
+      '作答到一半網頁被重新整理也不會不見：題目、已選答案和計時器都會自動接回來'
+    ] },
     { v: '1.4', date: '2026-10-12', items: [
       '新增「測驗模式」（設定區勾選）：全部做完交卷才顯示答案與詳解，作答中可按上一題／下一題或題號回去改答案',
       '新增計時器（設定區勾選、可自訂分鐘數）：時間到會跳出「時間結束」，按「看測驗結果」看成績',
@@ -238,6 +241,34 @@
   // ---------- 出題 ----------
   var session = null;
 
+  // 作答中的進度暫存在 sessionStorage：網頁被重新整理也能接著寫
+  var CUR_KEY = KEY + '-cur';
+  function saveCur() {
+    var s = session;
+    try {
+      if (!s || s.done || $('quiz').classList.contains('hidden')) { sessionStorage.removeItem(CUR_KEY); return; }
+      sessionStorage.setItem(CUR_KEY, JSON.stringify({
+        qs: s.qs.map(function (q) { return { id: q.tpl.id, q: q.q, exp: q.exp, fig: q.fig, opts: q.opts, ans: q.ans }; }),
+        i: s.i, title: s.title, exam: s.exam, picks: s.picks, end: s.end || 0, answered: !!s.answered,
+        results: s.results.map(function (r) { return { k: s.qs.indexOf(r.q), mine: r.mine, ok: r.ok }; })
+      }));
+    } catch (e) {}
+  }
+  function restoreCur() {
+    var o; try { o = JSON.parse(sessionStorage.getItem(CUR_KEY)); } catch (e) {}
+    if (!o || !o.qs || !o.qs.every(function (q) { return TPL_BY_ID[q.id]; })) return false;
+    var qs = o.qs.map(function (q) { return { tpl: TPL_BY_ID[q.id], q: q.q, exp: q.exp, fig: q.fig, opts: q.opts, ans: q.ans }; });
+    session = { qs: qs, i: o.i, title: o.title, exam: o.exam, picks: o.picks,
+      results: o.results.map(function (r) { return { q: qs[r.k], mine: r.mine, ok: r.ok }; }) };
+    $('quitBtn').textContent = o.exam ? '交卷' : '結束並看成績';
+    show('quiz'); renderQ();
+    if (!o.exam && o.answered) showAnswer(o.results[o.results.length - 1].mine);
+    if (o.end) startTimer(session, Math.max((o.end - Date.now()) / 60000, 0));
+    return true;
+  }
+  window.addEventListener('pagehide', saveCur);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) saveCur(); });
+
   function makeQuestions(tpls, count, opts) {
     opts = opts || {};
     var list = shuffle(tpls);
@@ -321,18 +352,25 @@
       nav.innerHTML = s.qs.map(function (_, k) { return '<button class="' + (s.picks[k] != null ? 'done' : '') + (k === s.i ? ' cur' : '') + '" data-k="' + k + '">' + (k + 1) + '</button>'; }).join('');
       Array.prototype.forEach.call(nav.children, function (b) { b.onclick = function () { s.i = +b.getAttribute('data-k'); renderQ(); }; });
     } else $('nextBtn').classList.add('hidden');
+    saveCur();
   }
 
   function answer(i) {
     var s = session;
     if (s.exam) { s.picks[s.i] = i; renderQ(); return; }
     if (s.answered) return; s.answered = true;
-    var q = s.qs[s.i], ok = i === q.ans;
+    var q = s.qs[s.i];
+    record(q, i);
+    s.results.push({ q: q, mine: i, ok: i === q.ans });
+    showAnswer(i);
+    saveCur();
+  }
+  function showAnswer(i) {
+    var s = session, q = s.qs[s.i], ok = i === q.ans;
+    s.answered = true;
     var btns = $('qOpts').children;
     for (var k = 0; k < btns.length; k++) { btns[k].disabled = true; if (k === q.ans) btns[k].classList.add('ok'); }
     if (!ok) btns[i].classList.add('bad');
-    record(q, i);
-    s.results.push({ q: q, mine: i, ok: ok });
     $('qFeedback').innerHTML = '<div class="exp"><div class="verdict ' + (ok ? 'ok">✔ 答對了' : 'bad">✘ 答錯了，正解是 ' + (q.ans + 1) + '. ' + fmt(q.opts[q.ans])) + '</div>' + fmt(q.exp) + '</div>';
     $('nextBtn').classList.remove('hidden');
     $('nextBtn').textContent = s.i + 1 < s.qs.length ? '下一題 ▶' : '看成績';
@@ -460,6 +498,7 @@
   // ---------- 畫面切換 ----------
   function show(id) {
     ['home', 'quiz', 'result', 'log'].forEach(function (x) { $(x).classList.toggle('hidden', x !== id); });
+    if (id !== 'quiz') try { sessionStorage.removeItem(CUR_KEY); } catch (e) {}
     window.scrollTo(0, 0);
   }
 
@@ -531,4 +570,5 @@
   };
 
   renderHome();
+  restoreCur();
 })();
