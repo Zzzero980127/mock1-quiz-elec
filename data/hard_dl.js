@@ -196,4 +196,6 @@
         figKmap(3, pick[1], true)];
     } }
   ]);
+  // 給 hard_more.js 用
+  DR.dlh = { primes: primes, minSOP: minSOP, termStr: termStr, sopStr: sopStr, wrongSOPs: wrongSOPs, figKmap: figKmap };
 })();
