@@ -220,7 +220,10 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
       <div class="opts" id="qOpts"></div>
       <div id="qFeedback"></div>
       <div class="row" style="justify-content:space-between">
-        <button class="btn ghost small" id="quitBtn">結束並看成績</button>
+        <span class="row">
+          <button class="btn ghost small" id="quitBtn">結束並看成績</button>
+          <button class="btn small" id="sketchBtn">✏️ 計算區</button>
+        </span>
         <span class="row">
           <button class="btn ghost hidden" id="prevBtn">◀ 上一題</button>
           <button class="btn hidden" id="nextBtn">下一題 ▶</button>
@@ -242,6 +245,7 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
       </div>
     </div>
     <div class="card"><b>各科表現</b><table id="rTable" style="margin-top:6px"></table></div>
+    <div class="card" id="rSketchCard"><b>計算區回顧</b><div class="muted" style="font-size:.85rem">點題號看那題的計算過程（✘ 是答錯的題目）</div><div class="row" id="rSketch" style="margin-top:8px"></div></div>
     <div class="card" id="rWrongCard"><b>錯題檢討</b><div id="rWrong"></div></div>
   </div>
 </div>
@@ -249,30 +253,31 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
 <div class="overlay hidden" id="timeUp"><div class="card"><div class="big" style="font-size:1.8rem">時間結束</div><div class="row" style="justify-content:center;margin-top:14px"><button class="btn" id="timeUpBtn">看測驗結果</button></div></div></div>
 
 <script>window.QUIZ_DATA = [];</script>
-<script src="data/_helpers.js?v=9"></script>
-<script src="data/_figures.js?v=9"></script>
-<script src="data/_draw.js?v=9"></script>
-<script src="data/chinese.js?v=9"></script>
-<script src="data/english.js?v=9"></script>
-<script src="data/math.js?v=9"></script>
-<script src="data/bee.js?v=9"></script>
-<script src="data/beel.js?v=9"></script>
-<script src="data/elec.js?v=9"></script>
-<script src="data/elecl.js?v=9"></script>
-<script src="data/mpu.js?v=9"></script>
-<script src="data/dl.js?v=9"></script>
-<script src="data/prog.js?v=9"></script>
-<script src="data/hard_chinese.js?v=9"></script>
-<script src="data/hard_english.js?v=9"></script>
-<script src="data/hard_math.js?v=9"></script>
-<script src="data/hard_bee.js?v=9"></script>
-<script src="data/hard_beel.js?v=9"></script>
-<script src="data/hard_elec.js?v=9"></script>
-<script src="data/hard_elecl.js?v=9"></script>
-<script src="data/hard_mpu.js?v=9"></script>
-<script src="data/hard_dl.js?v=9"></script>
-<script src="data/hard_prog.js?v=9"></script>
-<script src="data/add_v13.js?v=9"></script>
-<script src="app.js?v=9"></script>
+<script src="data/_helpers.js?v=11"></script>
+<script src="data/_figures.js?v=11"></script>
+<script src="data/_draw.js?v=11"></script>
+<script src="data/chinese.js?v=11"></script>
+<script src="data/english.js?v=11"></script>
+<script src="data/math.js?v=11"></script>
+<script src="data/bee.js?v=11"></script>
+<script src="data/beel.js?v=11"></script>
+<script src="data/elec.js?v=11"></script>
+<script src="data/elecl.js?v=11"></script>
+<script src="data/mpu.js?v=11"></script>
+<script src="data/dl.js?v=11"></script>
+<script src="data/prog.js?v=11"></script>
+<script src="data/hard_chinese.js?v=11"></script>
+<script src="data/hard_english.js?v=11"></script>
+<script src="data/hard_math.js?v=11"></script>
+<script src="data/hard_bee.js?v=11"></script>
+<script src="data/hard_beel.js?v=11"></script>
+<script src="data/hard_elec.js?v=11"></script>
+<script src="data/hard_elecl.js?v=11"></script>
+<script src="data/hard_mpu.js?v=11"></script>
+<script src="data/hard_dl.js?v=11"></script>
+<script src="data/hard_prog.js?v=11"></script>
+<script src="data/add_v13.js?v=11"></script>
+<script src="scratch.js?v=2"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>
