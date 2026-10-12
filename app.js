@@ -14,6 +14,12 @@
 
   // ---------- 更新日誌（新版本加在最上面） ----------
   var CHANGELOG = [
+    { v: '1.8', date: '2026-10-12', items: [
+      '新增第三個模式「統測區（統測類似題）」：仿 111～115 學年度統測（電機與電子群資電類專一、專二，國文、英文、數學C）的題型，只出一模範圍內的單元',
+      '專業科目約 75 種題型、共同科目約 45 種，多數計算題每次換數字；串並聯、電橋、戴維寧、稽納、整流、BJT 偏壓、示波器、七段顯示器、邏輯閘、卡諾圖（含隨意項）、二次函數等題附圖',
+      '統測區的作答紀錄、錯題本、弱點分析與簡單版、困難版分開（標示「統測」）',
+      '既有題目順序不變，簡單版與困難版的作答紀錄全部保留'
+    ] },
     { v: '1.7', date: '2026-10-12', items: [
       '設定新增「只出計算題」勾勾：勾選後一般練習與錯題本只出需要計算的題目（國文、英文不算，簡單版、困難版都適用）',
       '作答紀錄全部保留'
@@ -108,14 +114,22 @@
       (u.hard || []).forEach(function (it, qi) {
         TEMPLATES.push({ id: s.id + '-' + ui + '-h' + qi, si: si, ui: ui, tag: Array.isArray(it) ? it[0] : it.t, kind: Array.isArray(it) ? 's' : 'g', item: it, hard: true });
       });
+      // 統測區（仿 111～115 統測）：id 多一個 t，紀錄獨立
+      (u.tc || []).forEach(function (it, qi) {
+        TEMPLATES.push({ id: s.id + '-' + ui + '-t' + qi, si: si, ui: ui, tag: Array.isArray(it) ? it[0] : it.t, kind: Array.isArray(it) ? 's' : 'g', item: it, tc: true });
+      });
     });
   });
   var TPL_BY_ID = {}; TEMPLATES.forEach(function (t) { TPL_BY_ID[t.id] = t; });
 
   // 困難版的主題 key 結尾加 |H，弱點分析才不會和簡單版混在一起
-  function tagKey(t) { return t.si + '|' + t.ui + '|' + t.tag + (t.hard ? '|H' : ''); }
-  function isHardMode() { return store.mode === 'hard'; }
-  function inMode(t) { return !!t.hard === isHardMode(); }
+  // 統測區的主題 key 結尾加 |T
+  function tagKey(t) { return t.si + '|' + t.ui + '|' + t.tag + (t.hard ? '|H' : t.tc ? '|T' : ''); }
+  function curMode() { return store.mode === 'hard' || store.mode === 'tc' ? store.mode : 'easy'; }
+  function isHardMode() { return curMode() === 'hard'; }
+  function tplMode(t) { return t.hard ? 'hard' : t.tc ? 'tc' : 'easy'; }
+  function inMode(t) { return tplMode(t) === curMode(); }
+  var MODE_TAG = { hard: '困難', tc: '統測' };
 
   // 顯示用：跳脫 HTML，並把「a→」「AB→」改成箭頭在字母上方的向量寫法
   function fmt(s) { return esc(s).replace(/([A-Za-z]{1,2})→/g, '<span class="vec">$1</span>'); }
@@ -192,9 +206,10 @@
   }
 
   function renderHome() {
-    $('modeEasy').classList.toggle('on', !isHardMode());
-    $('modeHard').classList.toggle('on', isHardMode());
-    $('modeHint').textContent = isHardMode() ? '困難版：仿歷屆一模模考題型，多步驟計算與綜合判斷。紀錄與簡單版分開。' : '簡單版：基本觀念與單一公式，適合先熟悉重點。';
+    $('modeEasy').classList.toggle('on', curMode() === 'easy');
+    $('modeHard').classList.toggle('on', curMode() === 'hard');
+    $('modeTc').classList.toggle('on', curMode() === 'tc');
+    $('modeHint').textContent = curMode() === 'tc' ? '統測區：仿 111～115 學年度統測（電機與電子群資電類、共同科目）的題型與出題方式，只出一模範圍內的單元，部分題目附圖。紀錄與其他模式分開。' : isHardMode() ? '困難版：仿歷屆一模模考題型，多步驟計算與綜合判斷。紀錄與簡單版分開。' : '簡單版：基本觀念與單一公式，適合先熟悉重點。';
     var g = $('subjGrid'); g.innerHTML = '';
     SUBJ.forEach(function (s, si) {
       var cnt = TEMPLATES.filter(function (t) { return t.si === si && inMode(t); }).length;
@@ -243,8 +258,8 @@
       var u = s.units[+p[1]]; if (!u) continue;
       var tpls = TEMPLATES.filter(function (t) { return tagKey(t) === k; });
       if (!tpls.length) continue;
-      var hard = p[p.length - 1] === 'H';
-      arr.push({ key: k, hard: hard, subj: s.name, unit: u.name, tag: p.slice(2, hard ? -1 : undefined).join('|'), n: st.n, c: st.c, acc: st.c / st.n, recentWrong: st.rw || 0, gen: tpls.some(function (t) { return t.kind === 'g'; }), size: tpls.length });
+      var last = p[p.length - 1], md = last === 'H' ? 'hard' : last === 'T' ? 'tc' : 'easy', hard = md !== 'easy';
+      arr.push({ key: k, hard: md === 'hard', md: md, subj: s.name, unit: u.name, tag: p.slice(2, hard ? -1 : undefined).join('|'), n: st.n, c: st.c, acc: st.c / st.n, recentWrong: st.rw || 0, gen: tpls.some(function (t) { return t.kind === 'g'; }), size: tpls.length });
     }
     // 先排正確率低、再排最近連錯多
     arr.sort(function (a, b) { return (a.acc - b.acc) || (b.recentWrong - a.recentWrong) || (b.n - a.n); });
@@ -266,7 +281,7 @@
     if (!list.length) { box.innerHTML = '<span class="muted">還沒有作答紀錄，先練幾題就會出現分析。</span>'; return; }
     // 單元總覽
     var units = {};
-    list.forEach(function (w) { var k = w.subj + '・' + w.unit + (w.hard ? '（困難）' : ''); units[k] = units[k] || { n: 0, c: 0 }; units[k].n += w.n; units[k].c += w.c; });
+    list.forEach(function (w) { var k = w.subj + '・' + w.unit + (MODE_TAG[w.md] ? '（' + MODE_TAG[w.md] + '）' : ''); units[k] = units[k] || { n: 0, c: 0 }; units[k].n += w.n; units[k].c += w.c; });
     var uk = Object.keys(units).sort(function (a, b) { return units[a].c / units[a].n - units[b].c / units[b].n; });
     var html = '<div class="ugrid">' + uk.map(function (k) {
       var u = units[k], a = u.c / u.n, lv = level(a, u.n);
@@ -275,7 +290,7 @@
     html += '<table><tr><th>科目／單元</th><th>主題</th><th>正確率</th><th>狀態</th><th></th></tr>';
     list.slice(0, 30).forEach(function (w) {
       var lv = level(w.acc, w.n);
-      html += '<tr><td><span class="muted">' + esc(w.subj) + '</span><br>' + esc(w.unit) + '</td><td>' + esc(w.tag) + (w.hard ? ' <span class="tag hardtag">困難</span>' : '') + (w.gen ? ' <span class="tag">可出新數字</span>' : '') +
+      html += '<tr><td><span class="muted">' + esc(w.subj) + '</span><br>' + esc(w.unit) + '</td><td>' + esc(w.tag) + (MODE_TAG[w.md] ? ' <span class="tag hardtag">' + MODE_TAG[w.md] + '</span>' : '') + (w.gen ? ' <span class="tag">可出新數字</span>' : '') +
         '</td><td>' + Math.round(w.acc * 100) + '%<div class="mini"><i style="width:' + Math.round(w.acc * 100) + '%"></i></div><span class="hint">' + w.c + '/' + w.n + '</span></td><td class="' + lv[1] + '"><b>' + lv[0] + '</b></td>' +
         '<td><button class="btn small" data-k="' + esc(w.key) + '">練類題</button></td></tr>';
     });
@@ -370,7 +385,7 @@
   }
 
   function startWeakest() {
-    var weak = weakList().filter(function (w) { return w.acc < 0.8 && w.hard === isHardMode(); }).slice(0, 5).map(function (w) { return w.key; });
+    var weak = weakList().filter(function (w) { return w.acc < 0.8 && w.md === curMode(); }).slice(0, 5).map(function (w) { return w.key; });
     if (!weak.length) { flash('目前沒有不熟的主題，繼續保持！'); return; }
     startSimilar(weak);
   }
@@ -379,7 +394,7 @@
   function renderQ() {
     var s = session, q = s.qs[s.i], t = q.tpl;
     $('qProg').textContent = s.title + '　第 ' + (s.i + 1) + ' / ' + s.qs.length + ' 題';
-    $('qTag').textContent = (t.hard ? '困難・' : '') + SUBJ[t.si].name + '・' + SUBJ[t.si].units[t.ui].name + '・' + t.tag;
+    $('qTag').textContent = (MODE_TAG[tplMode(t)] ? MODE_TAG[tplMode(t)] + '・' : '') + SUBJ[t.si].name + '・' + SUBJ[t.si].units[t.ui].name + '・' + t.tag;
     $('qBar').style.width = (s.i / s.qs.length * 100) + '%';
     $("qText").innerHTML = fmt(q.q) + (q.fig ? '<div class="figbox">' + q.fig + '</div>' : '');
     var box = $('qOpts'); box.innerHTML = '';
@@ -556,7 +571,7 @@
     var keys = Object.keys(groups).sort(function (a, b) { return groups[b].items.length - groups[a].items.length; });
     box.innerHTML = keys.map(function (k) {
       var g = groups[k], t = g.t;
-      return '<details class="lg"><summary><b>' + esc(SUBJ[t.si].name) + '・' + esc(t.tag) + '</b>' + (t.hard ? ' <span class="tag hardtag">困難</span>' : '') + ' <span class="muted">（' + esc(SUBJ[t.si].units[t.ui].name) + '）錯 ' + g.items.length + ' 次</span> <button class="btn small" data-k="' + esc(k) + '">練類題</button></summary>' +
+      return '<details class="lg"><summary><b>' + esc(SUBJ[t.si].name) + '・' + esc(t.tag) + '</b>' + (MODE_TAG[tplMode(t)] ? ' <span class="tag hardtag">' + MODE_TAG[tplMode(t)] + '</span>' : '') + ' <span class="muted">（' + esc(SUBJ[t.si].units[t.ui].name) + '）錯 ' + g.items.length + ' 次</span> <button class="btn small" data-k="' + esc(k) + '">練類題</button></summary>' +
         g.items.slice(0, 10).map(function (l) {
           return '<div class="wrong"><div class="q">' + fmt(l.q) + '</div>' + (l.fig ? '<div class="figbox small">' + l.fig + '</div>' : '') + '<div class="badc">你選：' + fmt(l.mine) + '</div><div class="okc">正解：' + fmt(l.ans) + '</div><div class="hint">' + fmt(l.exp) + '<br>' + new Date(l.time).toLocaleString() + '</div></div>';
         }).join('') + '</details>';
@@ -578,6 +593,7 @@
   $('allOff').onclick = function () { SUBJ.forEach(function (s) { sel[s.id].on = false; }); save(); renderHome(); };
   $('modeEasy').onclick = function () { store.mode = 'easy'; save(); renderHome(); };
   $('modeHard').onclick = function () { store.mode = 'hard'; save(); renderHome(); };
+  $('modeTc').onclick = function () { store.mode = 'tc'; save(); renderHome(); };
   $('optCalcOnly').checked = !!store.calcOnly;
   $('optCalcOnly').onchange = function () { store.calcOnly = this.checked; save(); renderHome(); };
   $('startBtn').onclick = startNormal;

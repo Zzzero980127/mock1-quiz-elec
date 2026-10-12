@@ -13,6 +13,13 @@ window.addEasy = function (subjId, unitIndex, items) {
   var u = s.units[unitIndex];
   u.qs = (u.qs || []).concat(items);
 };
+// 統測區題目掛到既有單元上：addTc('bee', 0, [...])。id = 科目-單元-t序號，同樣只能往後加。
+window.addTc = function (subjId, unitIndex, items) {
+  var s = (window.QUIZ_DATA || []).filter(function (x) { return x.id === subjId; })[0];
+  if (!s || !s.units[unitIndex]) return;
+  var u = s.units[unitIndex];
+  u.tc = (u.tc || []).concat(items);
+};
 window.QH = (function () {
   function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a || 1; }
   // 負號用全形「−」比較好讀

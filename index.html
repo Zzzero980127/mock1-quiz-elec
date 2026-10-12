@@ -86,8 +86,9 @@ details.lg{border-bottom:1px solid var(--line);padding:8px 0}
 details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 #weakList{overflow-x:auto}
 .btn,.tag{white-space:nowrap}
-.seg{display:flex;margin:8px 0 6px;border:2px solid var(--accent);border-radius:10px;overflow:hidden;max-width:460px}
-.seg button{flex:1;border:none;background:var(--card);color:var(--accent);padding:9px 10px;font-size:.95rem;cursor:pointer;font-family:inherit}
+.seg{display:flex;margin:8px 0 6px;border:2px solid var(--accent);border-radius:10px;overflow:hidden;max-width:640px}
+.seg button{flex:1;border-left:1px solid var(--accent) !important;border:none;background:var(--card);color:var(--accent);padding:9px 10px;font-size:.95rem;cursor:pointer;font-family:inherit}
+.seg button:first-child{border-left:none !important}
 .seg button.on{background:var(--accent);color:#fff;font-weight:700}
 .seg button:focus-visible{outline:3px solid var(--ink);outline-offset:-3px}
 .figbox{margin:12px 0 2px;max-width:420px;color:var(--ink);font-weight:400}
@@ -135,6 +136,7 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
       <div class="seg" role="group" aria-label="難度模式">
         <button type="button" id="modeEasy">簡單版</button>
         <button type="button" id="modeHard">困難版（模考類似題）</button>
+        <button type="button" id="modeTc">統測區（統測類似題）</button>
       </div>
       <div class="hint" id="modeHint"></div>
     </div>
@@ -254,30 +256,31 @@ details.lg summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-item
 <div class="overlay hidden" id="timeUp"><div class="card"><div class="big" style="font-size:1.8rem">時間結束</div><div class="row" style="justify-content:center;margin-top:14px"><button class="btn" id="timeUpBtn">看測驗結果</button></div></div></div>
 
 <script>window.QUIZ_DATA = [];</script>
-<script src="data/_helpers.js?v=11"></script>
-<script src="data/_figures.js?v=11"></script>
-<script src="data/_draw.js?v=11"></script>
-<script src="data/chinese.js?v=11"></script>
-<script src="data/english.js?v=11"></script>
-<script src="data/math.js?v=11"></script>
-<script src="data/bee.js?v=11"></script>
-<script src="data/beel.js?v=11"></script>
-<script src="data/elec.js?v=11"></script>
-<script src="data/elecl.js?v=11"></script>
-<script src="data/mpu.js?v=11"></script>
-<script src="data/dl.js?v=11"></script>
-<script src="data/prog.js?v=11"></script>
-<script src="data/hard_chinese.js?v=11"></script>
-<script src="data/hard_english.js?v=11"></script>
-<script src="data/hard_math.js?v=11"></script>
-<script src="data/hard_bee.js?v=11"></script>
-<script src="data/hard_beel.js?v=11"></script>
-<script src="data/hard_elec.js?v=11"></script>
-<script src="data/hard_elecl.js?v=11"></script>
-<script src="data/hard_mpu.js?v=11"></script>
-<script src="data/hard_dl.js?v=11"></script>
-<script src="data/hard_prog.js?v=11"></script>
-<script src="data/add_v13.js?v=11"></script>
+<script src="data/_helpers.js?v=12"></script>
+<script src="data/_figures.js?v=12"></script>
+<script src="data/_draw.js?v=12"></script>
+<script src="data/chinese.js?v=12"></script>
+<script src="data/english.js?v=12"></script>
+<script src="data/math.js?v=12"></script>
+<script src="data/bee.js?v=12"></script>
+<script src="data/beel.js?v=12"></script>
+<script src="data/elec.js?v=12"></script>
+<script src="data/elecl.js?v=12"></script>
+<script src="data/mpu.js?v=12"></script>
+<script src="data/dl.js?v=12"></script>
+<script src="data/prog.js?v=12"></script>
+<script src="data/hard_chinese.js?v=12"></script>
+<script src="data/hard_english.js?v=12"></script>
+<script src="data/hard_math.js?v=12"></script>
+<script src="data/hard_bee.js?v=12"></script>
+<script src="data/hard_beel.js?v=12"></script>
+<script src="data/hard_elec.js?v=12"></script>
+<script src="data/hard_elecl.js?v=12"></script>
+<script src="data/hard_mpu.js?v=12"></script>
+<script src="data/hard_dl.js?v=12"></script>
+<script src="data/hard_prog.js?v=12"></script>
+<script src="data/add_v13.js?v=12"></script>
+<script src="data/tc_111_115.js?v=12"></script>
 <script src="scratch.js?v=2"></script>
 <script src="app.js?v=12"></script>
 </body>
