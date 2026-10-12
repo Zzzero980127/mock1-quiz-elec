@@ -14,6 +14,10 @@
 
   // ---------- 更新日誌（新版本加在最上面） ----------
   var CHANGELOG = [
+    { v: '1.7', date: '2026-10-12', items: [
+      '設定新增「只出計算題」勾勾：勾選後一般練習與錯題本只出需要計算的題目（國文、英文不算，簡單版、困難版都適用）',
+      '作答紀錄全部保留'
+    ] },
     { v: '1.6', date: '2026-10-12', items: [
       '作答畫面新增「✏️ 計算區」：可拖移、縮放的大畫布，有筆、橡皮擦、復原，每題各自一份，算到一半網頁重新整理也會保留',
       '交卷後可在「計算區回顧」或錯題檢討的「看計算區」重看當時的計算過程'
@@ -161,8 +165,20 @@
   });
   store.sel = sel;
 
+  // 計算題判斷：國英以外、題目與正解都含數字（產生器先試做一題來判斷，結果快取）
+  function isCalc(t) {
+    if (t.calc === undefined) {
+      try {
+        var raw = t.kind === 'g' ? t.item.g(R) : t.item.slice(1);
+        t.calc = !/^(chi|eng)$/.test(SUBJ[t.si].id) && /\d/.test(String(raw[0])) && /\d/.test(String(QH.fill(raw[1])[0]));
+      } catch (e) { t.calc = false; }
+    }
+    return t.calc;
+  }
+  function calcOk(t) { return !store.calcOnly || isCalc(t); }
+
   function selectedTemplates() {
-    return TEMPLATES.filter(function (t) { var s = sel[SUBJ[t.si].id]; return s.on && s.units[t.ui] && inMode(t); });
+    return TEMPLATES.filter(function (t) { var s = sel[SUBJ[t.si].id]; return s.on && s.units[t.ui] && inMode(t) && calcOk(t); });
   }
 
   // ---------- 首頁 ----------
@@ -338,7 +354,7 @@
   }
 
   function startWrongBook() {
-    var ids = Object.keys(store.wrong).filter(function (id) { return TPL_BY_ID[id] && inMode(TPL_BY_ID[id]); });
+    var ids = Object.keys(store.wrong).filter(function (id) { return TPL_BY_ID[id] && inMode(TPL_BY_ID[id]) && calcOk(TPL_BY_ID[id]); });
     var tpls = ids.map(function (id) { return TPL_BY_ID[id]; });
     var count = +$('count').value;
     startSession(makeQuestions(tpls, count), '錯題本');
@@ -562,6 +578,8 @@
   $('allOff').onclick = function () { SUBJ.forEach(function (s) { sel[s.id].on = false; }); save(); renderHome(); };
   $('modeEasy').onclick = function () { store.mode = 'easy'; save(); renderHome(); };
   $('modeHard').onclick = function () { store.mode = 'hard'; save(); renderHome(); };
+  $('optCalcOnly').checked = !!store.calcOnly;
+  $('optCalcOnly').onchange = function () { store.calcOnly = this.checked; save(); renderHome(); };
   $('startBtn').onclick = startNormal;
   $('wrongBtn').onclick = startWrongBook;
   $('weakBtn').onclick = startWeakest;
