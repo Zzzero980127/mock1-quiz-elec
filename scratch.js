@@ -66,7 +66,7 @@
     root.querySelectorAll('[data-t]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-t') === t); });
     wrap.classList.toggle('hand', t === 'hand');
     shapesBtn.classList.toggle('on', !!SHAPES[t]);
-    if (!SHAPES[t]) shapesRow.classList.add('hidden');
+    if (!SHAPES[t] && !shapesRow.classList.contains('hidden')) { shapesRow.classList.add('hidden'); if (data) resize(); }
   }
   function setColor(c) {
     color = c;
@@ -257,7 +257,7 @@
     var t = b.getAttribute('data-t'), c = b.getAttribute('data-c'), a = b.getAttribute('data-a');
     if (t) setTool(t);
     else if (c) setColor(c);
-    else if (a === 'shapes') shapesRow.classList.toggle('hidden');
+    else if (a === 'shapes') { shapesRow.classList.toggle('hidden'); resize(); }
     else if (a === 'undo') undo();
     else if (a === 'clear') {
       if (!data.strokes.length) return;
@@ -285,6 +285,9 @@
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { undo(); e.preventDefault(); }
   });
   window.addEventListener('resize', function () { if (isOpen()) resize(); });
+  // 圖形列展開／題目收合會改變畫布大小，要重新對齊，否則筆跡會和游標錯位
+  if (window.ResizeObserver) new ResizeObserver(function () { if (isOpen()) resize(); }).observe(wrap);
+  root.querySelector('.scr-q').addEventListener('toggle', function () { if (isOpen()) resize(); });
 
   function isOpen() { return !root.classList.contains('hidden'); }
   function open(o) {
