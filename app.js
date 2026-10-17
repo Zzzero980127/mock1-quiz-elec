@@ -660,6 +660,7 @@
 
   // ---------- 更新日誌畫面 ----------
   var DEV = (function () { try { var s = location.search; if (/[?&]dev=0/.test(s)) localStorage.removeItem('quizDev'); else if (/[?&]dev(=1)?(&|$)/.test(s)) localStorage.setItem('quizDev', '1'); return localStorage.getItem('quizDev') === '1'; } catch (e) { return false; } })();
+  (function () { var h = document.querySelector('#home h1'), n = 0, t; if (!h) return; h.addEventListener('click', function () { n++; clearTimeout(t); t = setTimeout(function () { n = 0; }, 2500); if (n >= 5) { try { if (DEV) localStorage.removeItem('quizDev'); else localStorage.setItem('quizDev', '1'); } catch (e) {} location.reload(); } }); })();
   var latest = CHANGELOG[0];
   if (DEV) $('verText').textContent = '目前版本 v' + latest.v + '（' + latest.date + '）';
   else { var vt = $('verText'); var pv = vt.previousSibling; if (pv && pv.nodeType === 3) pv.nodeValue = pv.nodeValue.replace(/・$/, ''); vt.parentNode.removeChild(vt); $('clBtn').style.display = 'none'; $('clCard').style.display = 'none'; }
