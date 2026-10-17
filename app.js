@@ -659,8 +659,10 @@
   });
 
   // ---------- 更新日誌畫面 ----------
+  var DEV = (function () { try { var s = location.search; if (/[?&]dev=0/.test(s)) localStorage.removeItem('quizDev'); else if (/[?&]dev(=1)?(&|$)/.test(s)) localStorage.setItem('quizDev', '1'); return localStorage.getItem('quizDev') === '1'; } catch (e) { return false; } })();
   var latest = CHANGELOG[0];
-  $('verText').textContent = '目前版本 v' + latest.v + '（' + latest.date + '）';
+  if (DEV) $('verText').textContent = '目前版本 v' + latest.v + '（' + latest.date + '）';
+  else { var vt = $('verText'); var pv = vt.previousSibling; if (pv && pv.nodeType === 3) pv.nodeValue = pv.nodeValue.replace(/・$/, ''); vt.parentNode.removeChild(vt); $('clBtn').style.display = 'none'; $('clCard').style.display = 'none'; }
   $('clList').innerHTML = CHANGELOG.map(function (c, i) {
     return '<div class="cl"><span class="v">v' + esc(c.v) + '</span> <span class="muted">' + esc(c.date) + '</span>' + (i === 0 ? '<span class="new">最新</span>' : '') +
       '<ul>' + c.items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>';
